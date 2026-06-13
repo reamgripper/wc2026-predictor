@@ -714,7 +714,7 @@ def squad_panel(players, team_name, atk_adj, def_adj, form: dict = None,
         return
 
     form = form or {}
-    injured = [p for p in players if p["is_injured"]]
+    saved = st.session_state.get(f"injured::{team_name}", set())
 
     # ── Tournament form banner ────────────────────────────────────────────────
     gp = form.get("games_played", 0)
@@ -745,20 +745,35 @@ def squad_panel(players, team_name, atk_adj, def_adj, form: dict = None,
                 unsafe_allow_html=True,
             )
 
-    # ── Injury / suspension banner ────────────────────────────────────────────
-    if injured:
+    # ── Injury / suspension banner (reflects the last SAVED selection) ────────
+    if atk_adj < 1.0 or def_adj < 1.0 or saved:
         pen_a = round((1 - atk_adj) * 100, 1)
         pen_d = round((1 - def_adj) * 100, 1)
         st.markdown(
-            f"<div class='inj-banner'>⚠️ <b>{len(injured)} concern(s)</b> — "
+            f"<div class='inj-banner'>⚠️ <b>{len(saved)} unavailable</b> — "
             f"Attack λ −{pen_a}%&nbsp;&nbsp;·&nbsp;&nbsp;Defence λ −{pen_d}%</div>",
             unsafe_allow_html=True,
         )
     else:
         st.markdown(
-            "<div class='ok-banner'>✅ <b>Full squad available</b> — no injuries reported</div>",
+            "<div class='ok-banner'>✅ <b>Full squad available</b> — tick anyone who is out below</div>",
             unsafe_allow_html=True,
         )
+
+    # ── Editing controls ──────────────────────────────────────────────────────
+    st.markdown(
+        "<div style='font-size:.76rem;color:rgba(255,255,255,0.42);margin:2px 0 6px;'>"
+        "Tick players who are injured or unavailable, then press "
+        "<b>Save &amp; re-run</b> to apply them to the prediction.</div>",
+        unsafe_allow_html=True,
+    )
+    _sc1, _sc2, _ = st.columns([1.4, 1, 4])
+    with _sc1:
+        save_clicked = st.button("💾 Save & re-run", key=f"savechk::{team_name}",
+                                 use_container_width=True, type="primary")
+    with _sc2:
+        clear_clicked = st.button("Clear", key=f"clearchk::{team_name}",
+                                  use_container_width=True)
 
     # Build per-player WC 2026 stat lookup
     player_stat_map: dict = {}
@@ -778,11 +793,17 @@ def squad_panel(players, team_name, atk_adj, def_adj, form: dict = None,
         if not group:
             continue
         st.markdown(f"<div class='sh'>{pos_group}s</div>", unsafe_allow_html=True)
-        cols = st.columns(2)
-        for i, p in enumerate(group):
-            with cols[i % 2]:
+        for p in group:
+            ck = f"injchk::{team_name}::{p['name']}"
+            if ck not in st.session_state:
+                # Seed once from the saved set (which itself starts from ESPN injuries)
+                st.session_state[ck] = p["name"] in saved
+            c1, c2 = st.columns([1, 18])
+            with c1:
+                st.checkbox("unavailable", key=ck, label_visibility="collapsed")
+            with c2:
+                checked = st.session_state[ck]
                 ps = player_stat_map.get(p["name"], {})
-                # Build stat badge string
                 badges = []
                 if ps.get("goals"):   badges.append(f"⚽{ps['goals']}")
                 if ps.get("assists"): badges.append(f"🎯{ps['assists']}")
@@ -791,8 +812,8 @@ def squad_panel(players, team_name, atk_adj, def_adj, form: dict = None,
                 if ps.get("reds"):    badges.append(f"🟥{ps['reds']}")
                 badge_str = " ".join(badges)
 
-                if p["is_injured"]:
-                    detail = p.get("injury_detail") or p.get("status", "Injury concern")
+                if checked:
+                    detail = p.get("injury_detail") if p.get("is_injured") else "Marked unavailable"
                     st.markdown(
                         f"<div class='player-inj'>⚠️ <b>{p['name']}</b>"
                         f"{'  ' + badge_str if badge_str else ''}"
@@ -801,11 +822,28 @@ def squad_panel(players, team_name, atk_adj, def_adj, form: dict = None,
                     )
                 else:
                     age = f"  ·  {p['age']}y" if p.get("age") else ""
+                    inj_hint = (" <span style='font-size:.7rem;color:#f6ad55;'>"
+                                "(ESPN: injury concern)</span>") if p.get("is_injured") else ""
                     st.markdown(
                         f"<div class='player-ok'>● <b>{p['name']}</b>"
-                        f"<span style='font-size:.75rem;color:rgba(255,255,255,0.35);'>{age}</span></div>",
+                        f"<span style='font-size:.75rem;color:rgba(255,255,255,0.35);'>{age}</span>"
+                        f"{badge_str and '  ' + badge_str}{inj_hint}</div>",
                         unsafe_allow_html=True,
                     )
+
+    # ── Apply Save / Clear (read AFTER widgets so checkbox state is current) ───
+    if clear_clicked:
+        for p in players:
+            st.session_state[f"injchk::{team_name}::{p['name']}"] = False
+        st.session_state[f"injured::{team_name}"] = set()
+        st.session_state["_apply_injuries"] = True
+        st.rerun()
+    if save_clicked:
+        chosen = {p["name"] for p in players
+                  if st.session_state.get(f"injchk::{team_name}::{p['name']}")}
+        st.session_state[f"injured::{team_name}"] = chosen
+        st.session_state["_apply_injuries"] = True
+        st.rerun()
 
 # ─────────────────────────────────────────────────────────────────────────────
 # SIDEBAR
@@ -879,39 +917,29 @@ with st.sidebar:
                                help="WC 2026 squads from ESPN — add injured players manually below")
 
     if include_squad:
-        # Fetch squads now (cached) so we can populate multiselect options
+        # Pre-fetch squads (cached) so we can seed each team's injured list.
         _h_squad_pre, _, _, _ = get_squad_cached(home_team, True)
         _a_squad_pre, _, _, _ = get_squad_cached(away_team, True)
 
-        def _squad_options(squad):
-            """Return player names ordered GK → DEF → MID → FWD."""
-            order = {"Goalkeeper": 0, "Defender": 1, "Midfielder": 2, "Forward": 3}
-            def _grp(pos):
-                for k in order:
-                    if k in pos:
-                        return order[k]
-                return 2
-            return [p["name"] for p in sorted(squad, key=lambda p: _grp(p["position"]))]
+        # Injured players are now ticked directly in the squad list below the
+        # results. We keep one saved set per team in session_state (browser
+        # session only — never written to disk), seeded once from ESPN's
+        # reported injuries. The user can override it and Save.
+        for _team, _sq in ((home_team, _h_squad_pre), (away_team, _a_squad_pre)):
+            _key = f"injured::{_team}"
+            if _key not in st.session_state:
+                st.session_state[_key] = {p["name"] for p in _sq if p.get("is_injured")}
 
-        h_options = _squad_options(_h_squad_pre)
-        a_options = _squad_options(_a_squad_pre)
+        h_injury_names = sorted(st.session_state.get(f"injured::{home_team}", set()))
+        a_injury_names = sorted(st.session_state.get(f"injured::{away_team}", set()))
 
         st.markdown(
             "<div style='font-size:.75rem;color:rgba(255,255,255,0.45);margin:6px 0 2px;'>"
-            "⚠️ Injured / unavailable</div>",
+            f"⚠️ Unavailable &nbsp;·&nbsp; {home_team}: <b>{len(h_injury_names)}</b>"
+            f" &nbsp;·&nbsp; {away_team}: <b>{len(a_injury_names)}</b><br>"
+            "<span style='opacity:.85;'>Tick players in the squad list below the "
+            "results, then <b>Save</b>.</span></div>",
             unsafe_allow_html=True,
-        )
-        h_injury_names = st.multiselect(
-            f"{home_team}",
-            options=h_options,
-            key="h_injury_select",
-            placeholder="Select injured players…",
-        )
-        a_injury_names = st.multiselect(
-            f"{away_team}",
-            options=a_options,
-            key="a_injury_select",
-            placeholder="Select injured players…",
         )
     else:
         h_injury_names, a_injury_names = [], []
@@ -1032,7 +1060,8 @@ if home_team == away_team:
     st.stop()
 
 # ── Simulation ────────────────────────────────────────────────────────────────
-if "result" not in st.session_state or run_btn:
+if ("result" not in st.session_state or run_btn
+        or st.session_state.pop("_apply_injuries", False)):
     with st.spinner("Fetching squads & player stats…"):
         h_squad, _, _, _ = get_squad_cached(home_team, include_squad)
         a_squad, _, _, _ = get_squad_cached(away_team, include_squad)
