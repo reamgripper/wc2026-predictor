@@ -1,0 +1,29 @@
+# ── Core simulator (required) ─────────────────────────────────────────────────
+streamlit>=1.50
+pandas>=2.0
+numpy>=1.26
+scipy>=1.11
+statsmodels>=0.14
+plotly>=5.20
+requests>=2.31
+pyarrow>=14.0            # parquet cache read/write
+
+# ── Authentication (username/password login) ──────────────────────────────────
+streamlit-authenticator==0.4.2   # pulls in bcrypt, extra-streamlit-components, PyJWT
+
+# ── LLM client (lazy; harmless if unused) ─────────────────────────────────────
+openai>=1.40
+
+# ── Expert Analysis pipeline (OPTIONAL) ───────────────────────────────────────
+# These are imported lazily, so the app deploys and every page loads without
+# them — only the Scrape tab and the RAG/LLM Analyst tab need them. They are
+# commented out because langchain + faiss-cpu are the most common cloud-build
+# failures, and the LLM needs a reachable Ollama server (not available on
+# Streamlit Cloud). Uncomment to enable the scraping/RAG features.
+#
+# trafilatura>=1.8          # article-body extraction (Scrape tab)
+# markdownify>=0.13         # HTML -> Markdown fallback
+# nest-asyncio>=1.6         # async in Streamlit event loops
+# langchain>=0.3            # RAG orchestration
+# langchain-community>=0.3  # Ollama LLM + embeddings + FAISS wrapper
+# faiss-cpu>=1.8            # local vector store

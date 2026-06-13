@@ -1,0 +1,118 @@
+Id,Name,Shape Library,Page ID,Contained By,Group,Line Source,Line Destination,Source Arrow,Destination Arrow,Status,Text Alignment,Width,Height,Line Style,Stroke,Fill,Opacity,Rounded,Link,Notes
+1,DATA SOURCES,,1,,,,,,,,,,,,,,,,,
+2,"Kaggle Dataset
+martj42/international-football-results
+47k historical matches (1872–2024)",Entity Relationship,1,,,,,,,,,,200,70,,#6c8ebf,#dae8fc,100,1,,
+3,"ESPN Unofficial API
+WC 2026 Fixtures · Results · Match Summary
+Squad Rosters · Per-player Stats · Odds",Entity Relationship,1,,,,,,,,,,200,70,,#6c8ebf,#dae8fc,100,1,,
+4,"eloratings.net
+World Football ELO Rankings
+Refreshed every 24 hours",Entity Relationship,1,,,,,,,,,,200,70,,#6c8ebf,#dae8fc,100,1,,
+5,"DraftKings / ESPN Odds
+3-way moneyline + Over/Under
+Per scheduled WC 2026 fixture",Entity Relationship,1,,,,,,,,,,200,70,,#d6b656,#ffe6cc,100,1,,
+6,"Polymarket
+WC 2026 Tournament Winner Markets
+Crowd-sourced implied probabilities",Entity Relationship,1,,,,,,,,,,200,70,,#d6b656,#ffe6cc,100,1,,
+7,PERSISTENCE LAYER,,1,,,,,,,,,,,,,,,,,
+8,"historical_matches.parquet
+47k+ WC & international matches
+Cold-load once · warm-read <3s",Cylinder,1,,,,,,,,,,200,80,,#b85450,#f8cecc,100,0,,
+9,"wc2026_results.parquet
+Completed WC 2026 match results
+Incremental append via ESPN",Cylinder,1,,,,,,,,,,200,80,,#b85450,#f8cecc,100,0,,
+10,"elo_ratings.parquet
+Team ELO ratings (~82 teams)
+TTL: 24 hours",Cylinder,1,,,,,,,,,,200,80,,#b85450,#f8cecc,100,0,,
+11,"player_stats_wc2026.parquet
+Goals · Assists · Shots · Cards
+Per player per match · incremental",Cylinder,1,,,,,,,,,,210,80,,#b85450,#f8cecc,100,0,,
+12,"metadata.json
+Timestamps · Row counts
+Cache validity tracking",Cylinder,1,,,,,,,,,,190,80,,#b85450,#f8cecc,100,0,,
+13,MODEL & SIMULATION,,1,,,,,,,,,,,,,,,,,
+14,"Feature Engineering
+Home/Away attack & defence rates
+ELO diff · Venue (host) flags
+Knockout stage multiplier",Entity Relationship,1,,,,,,,,,,230,90,,#82b366,#d5e8d4,100,1,,
+15,"Poisson GLM (statsmodels)
+Separate home / away goal models
+Outputs: λ_home · λ_away
+Dixon-Coles low-score correction",Entity Relationship,1,,,,,,,,,,230,90,,#82b366,#d5e8d4,100,1,,
+16,"Tournament Form Adjustment
+Goals/game vs tournament avg
+λ × atk_mult / def_mult
+Weight ramps 0→0.35 over 3 games",Entity Relationship,1,,,,,,,,,,240,90,,#82b366,#d5e8d4,100,1,,
+17,"Injury / Suspension Adjustment
+Manual multiselect from squad
+POSITION_IMPACT weights (GK→FWD)
+Auto red-card suspension detection",Entity Relationship,1,,,,,,,,,,245,90,,#82b366,#d5e8d4,100,1,,
+18,"Monte Carlo Simulation
+10,000 Poisson draws (seeded)
+Uncertainty from training residuals
+→ P(Home Win) · P(Draw) · P(Away)",Entity Relationship,1,,,,,,,,,,240,90,,#82b366,#d5e8d4,100,1,,
+19,"Skellam Distribution CI
+95% confidence interval on goal diff
+Margin of error estimate",Entity Relationship,1,,,,,,,,,,230,80,,#82b366,#d5e8d4,100,1,,
+20,MARKET INTELLIGENCE,,1,,,,,,,,,,,,,,,,,
+21,"DraftKings Market Blend
+De-vig 3-way moneyline → fair probs
+O/U → market total goals
+Geometric blend with model λ (0-100%)",Entity Relationship,1,,,,,,,,,,270,90,,#d6b656,#fff2cc,100,1,,
+22,"Polymarket Intelligence Panel
+WC winner implied probs per team
+Relative tournament strength ratio
+Refreshed every 5 minutes",Entity Relationship,1,,,,,,,,,,270,90,,#d6b656,#fff2cc,100,1,,
+23,STREAMLIT UI,,1,,,,,,,,,,,,,,,,,
+24,"Main Predictor Page
+(wc2026_ui.py)
+Team selector · Stage · Venue flags
+Injury multiselect · Market toggle
+Scoreline · Probs · Goal diff CI
+Squad panel · Form banner · Top scorers",Entity Relationship,1,,,,,,,,,,280,110,,#9673a6,#e1d5e7,100,1,,
+25,"Expert Analysis Page
+Tab 1: URL scrape → AI extraction
+Tab 2: Report library
+Tab 3: AI Analyst (RAG / direct)
+FAISS · LangChain · Ollama (BYOK)",Entity Relationship,1,,,,,,,,,,270,110,,#9673a6,#e1d5e7,100,1,,
+26,"Saved Predictions Page
+In-session memory only (session_state)
+Never written to disk · cleared on tab close
+Compare multiple matchup predictions",Entity Relationship,1,,,,,,,,,,270,110,,#9673a6,#e1d5e7,100,1,,
+27,"FAISS Vector Store
+Embedded match reports
+LangChain text splitter",Cylinder,1,,,,,,,,,,190,80,,#9673a6,#e1d5e7,100,0,,
+28,"Ollama LLM (BYOK)
+OpenAI-compatible API
+RAG mode or direct mode",Entity Relationship,1,,,,,,,,,,190,80,,#9673a6,#e1d5e7,100,1,,
+,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,
+,Connections,,,,,,,,,,,,,,,,,,,
+,Kaggle → historical_matches.parquet,,1,,,,2,8,none,arrow,,,,,,,,,
+,ESPN → wc2026_results.parquet,,1,,,,3,9,none,arrow,,,,,,,,,
+,ESPN → elo_ratings.parquet,,1,,,,3,10,none,arrow,,,,,,,,,
+,ESPN → player_stats.parquet,,1,,,,3,11,none,arrow,,,,,,,,,
+,ESPN → metadata.json,,1,,,,3,12,none,arrow,,,,,,,,,
+,eloratings.net → elo_ratings.parquet,,1,,,,4,10,none,arrow,,,,,,,,,
+,historical_matches → Feature Engineering,,1,,,,8,14,none,arrow,,,,,,,,,
+,wc2026_results → Feature Engineering,,1,,,,9,14,none,arrow,,,,,,,,,
+,elo_ratings → Feature Engineering,,1,,,,10,14,none,arrow,,,,,,,,,
+,Feature Engineering → Poisson GLM,,1,,,,14,15,none,arrow,,,,,,,,,
+,player_stats → Tournament Form Adj,,1,,,,11,16,none,arrow,,,,,,,,,
+,player_stats → Injury Adj (suspensions),,1,,,,11,17,none,arrow,,,,,,,,,
+,Poisson GLM → Monte Carlo (λ),,1,,,,15,18,none,arrow,,,,,,,,,
+,Tournament Form → Monte Carlo (mult),,1,,,,16,18,none,arrow,,,,,,,,,
+,Injury Adj → Monte Carlo (penalty),,1,,,,17,18,none,arrow,,,,,,,,,
+,Monte Carlo → Skellam CI,,1,,,,18,19,none,arrow,,,,,,,,,
+,DraftKings → DK Blend,,1,,,,5,21,none,arrow,,,,,,,,,
+,Polymarket → Polymarket Panel,,1,,,,6,22,none,arrow,,,,,,,,,
+,Poisson GLM → DK Blend (model λ),,1,,,,15,21,none,arrow,,,,,,,,,
+,Monte Carlo → Main Predictor,,1,,,,18,24,none,arrow,,,,,,,,,
+,Skellam CI → Main Predictor,,1,,,,19,24,none,arrow,,,,,,,,,
+,DK Blend → Main Predictor,,1,,,,21,24,none,arrow,,,,,,,,,
+,Polymarket Panel → Main Predictor,,1,,,,22,24,none,arrow,,,,,,,,,
+,player_stats → Main Predictor (badges),,1,,,,11,24,none,arrow,,,,,,,,,
+,Main Predictor → Saved Predictions,,1,,,,24,26,none,arrow,,,,,,,,,
+,FAISS → Expert Analysis,,1,,,,27,25,none,arrow,,,,,,,,,
+,Ollama → Expert Analysis,,1,,,,28,25,none,arrow,,,,,,,,,

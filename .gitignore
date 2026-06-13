@@ -1,0 +1,20 @@
+# Secrets — never commit
+.streamlit/secrets.toml
+*.env
+.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Local artifacts
+predictions.json
+*.log
+.DS_Store
+.claude/
+
+# Scraped Expert-Analysis content (user-generated; rebuilt at runtime)
+data/raw_markdown/
+data/processed/

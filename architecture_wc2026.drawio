@@ -1,0 +1,322 @@
+<mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
+  <root>
+    <mxCell id="0" />
+    <mxCell id="1" parent="0" />
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- LAYER LABELS                                                        -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+
+    <!-- Layer 1: Data Sources -->
+    <mxCell id="lbl_l1" value="DATA SOURCES" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;fontSize=11;fontStyle=1;fontColor=#888888;" vertex="1" parent="1">
+      <mxGeometry x="20" y="40" width="140" height="20" as="geometry" />
+    </mxCell>
+
+    <!-- Layer 2: Cache -->
+    <mxCell id="lbl_l2" value="PERSISTENCE LAYER" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;fontSize=11;fontStyle=1;fontColor=#888888;" vertex="1" parent="1">
+      <mxGeometry x="20" y="280" width="160" height="20" as="geometry" />
+    </mxCell>
+
+    <!-- Layer 3: Model -->
+    <mxCell id="lbl_l3" value="MODEL &amp; SIMULATION" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;fontSize=11;fontStyle=1;fontColor=#888888;" vertex="1" parent="1">
+      <mxGeometry x="20" y="520" width="180" height="20" as="geometry" />
+    </mxCell>
+
+    <!-- Layer 4: Blending -->
+    <mxCell id="lbl_l4" value="MARKET INTELLIGENCE" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;fontSize=11;fontStyle=1;fontColor=#888888;" vertex="1" parent="1">
+      <mxGeometry x="20" y="780" width="180" height="20" as="geometry" />
+    </mxCell>
+
+    <!-- Layer 5: UI -->
+    <mxCell id="lbl_l5" value="STREAMLIT UI" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;fontSize=11;fontStyle=1;fontColor=#888888;" vertex="1" parent="1">
+      <mxGeometry x="20" y="1010" width="180" height="20" as="geometry" />
+    </mxCell>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- LAYER 1: DATA SOURCES                                               -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+
+    <!-- Kaggle -->
+    <mxCell id="kaggle" value="&lt;b&gt;Kaggle Dataset&lt;/b&gt;&lt;br/&gt;martj42/international-football-results&lt;br/&gt;47k historical matches (1872–2024)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;arcSize=10;" vertex="1" parent="1">
+      <mxGeometry x="200" y="30" width="240" height="70" as="geometry" />
+    </mxCell>
+
+    <!-- ESPN API -->
+    <mxCell id="espn" value="&lt;b&gt;ESPN Unofficial API&lt;/b&gt;&lt;br/&gt;WC 2026 Fixtures · Results · Match Summary&lt;br/&gt;Squad Rosters · Per-player Stats · Odds" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;arcSize=10;" vertex="1" parent="1">
+      <mxGeometry x="470" y="30" width="240" height="70" as="geometry" />
+    </mxCell>
+
+    <!-- ELO Ratings -->
+    <mxCell id="elo_src" value="&lt;b&gt;eloratings.net&lt;/b&gt;&lt;br/&gt;World Football ELO Rankings&lt;br/&gt;Refreshed every 24 hours" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;arcSize=10;" vertex="1" parent="1">
+      <mxGeometry x="740" y="30" width="200" height="70" as="geometry" />
+    </mxCell>
+
+    <!-- DraftKings / ESPN Odds -->
+    <mxCell id="dk_src" value="&lt;b&gt;DraftKings / ESPN Odds&lt;/b&gt;&lt;br/&gt;3-way moneyline + Over/Under&lt;br/&gt;Per scheduled WC 2026 fixture" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d6b656;fontSize=11;arcSize=10;" vertex="1" parent="1">
+      <mxGeometry x="970" y="30" width="220" height="70" as="geometry" />
+    </mxCell>
+
+    <!-- Polymarket -->
+    <mxCell id="poly_src" value="&lt;b&gt;Polymarket&lt;/b&gt;&lt;br/&gt;WC 2026 Tournament Winner Markets&lt;br/&gt;Crowd-sourced implied probabilities" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d6b656;fontSize=11;arcSize=10;" vertex="1" parent="1">
+      <mxGeometry x="1220" y="30" width="220" height="70" as="geometry" />
+    </mxCell>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- LAYER 2: PERSISTENCE (CACHE)                                        -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+
+    <!-- Historical Parquet -->
+    <mxCell id="hist_pq" value="&lt;b&gt;historical_matches.parquet&lt;/b&gt;&lt;br/&gt;47k+ WC &amp; international matches&lt;br/&gt;Cold-load once · warm-read &lt;3s" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="200" y="270" width="200" height="90" as="geometry" />
+    </mxCell>
+
+    <!-- WC2026 Parquet -->
+    <mxCell id="wc_pq" value="&lt;b&gt;wc2026_results.parquet&lt;/b&gt;&lt;br/&gt;Completed WC 2026 match results&lt;br/&gt;Incremental append via ESPN" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="430" y="270" width="200" height="90" as="geometry" />
+    </mxCell>
+
+    <!-- ELO Parquet -->
+    <mxCell id="elo_pq" value="&lt;b&gt;elo_ratings.parquet&lt;/b&gt;&lt;br/&gt;Team ELO ratings (~82 teams)&lt;br/&gt;TTL: 24 hours" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="660" y="270" width="200" height="90" as="geometry" />
+    </mxCell>
+
+    <!-- Player Stats Parquet -->
+    <mxCell id="stats_pq" value="&lt;b&gt;player_stats_wc2026.parquet&lt;/b&gt;&lt;br/&gt;Goals · Assists · Shots · Cards&lt;br/&gt;Per player per match · incremental" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="890" y="270" width="210" height="90" as="geometry" />
+    </mxCell>
+
+    <!-- Metadata JSON -->
+    <mxCell id="meta_json" value="&lt;b&gt;metadata.json&lt;/b&gt;&lt;br/&gt;Timestamps · Row counts&lt;br/&gt;Cache validity tracking" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="1120" y="270" width="200" height="90" as="geometry" />
+    </mxCell>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- LAYER 3: MODEL & SIMULATION                                         -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+
+    <!-- Feature Engineering -->
+    <mxCell id="feat_eng" value="&lt;b&gt;Feature Engineering&lt;/b&gt;&lt;br/&gt;Home/Away attack &amp; defence rates&lt;br/&gt;ELO diff · Venue (host) flags&lt;br/&gt;Knockout stage multiplier" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;arcSize=10;" vertex="1" parent="1">
+      <mxGeometry x="200" y="510" width="230" height="90" as="geometry" />
+    </mxCell>
+
+    <!-- Poisson GLM -->
+    <mxCell id="glm" value="&lt;b&gt;Poisson GLM&lt;/b&gt; (statsmodels)&lt;br/&gt;Separate home / away goal models&lt;br/&gt;Outputs: λ_home · λ_away&lt;br/&gt;Dixon-Coles low-score correction" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;arcSize=10;" vertex="1" parent="1">
+      <mxGeometry x="460" y="510" width="230" height="90" as="geometry" />
+    </mxCell>
+
+    <!-- Tournament Form -->
+    <mxCell id="form_adj" value="&lt;b&gt;Tournament Form Adjustment&lt;/b&gt;&lt;br/&gt;Goals/game vs tournament avg&lt;br/&gt;λ × atk_mult / def_mult&lt;br/&gt;Weight ramps 0→0.35 over 3 games" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;arcSize=10;" vertex="1" parent="1">
+      <mxGeometry x="720" y="510" width="240" height="90" as="geometry" />
+    </mxCell>
+
+    <!-- Injury Adjustment -->
+    <mxCell id="injury_adj" value="&lt;b&gt;Injury / Suspension Adjustment&lt;/b&gt;&lt;br/&gt;Manual multiselect from squad&lt;br/&gt;POSITION_IMPACT weights (GK→FWD)&lt;br/&gt;Auto red-card suspension detection" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;arcSize=10;" vertex="1" parent="1">
+      <mxGeometry x="990" y="510" width="245" height="90" as="geometry" />
+    </mxCell>
+
+    <!-- Monte Carlo -->
+    <mxCell id="mc" value="&lt;b&gt;Monte Carlo Simulation&lt;/b&gt;&lt;br/&gt;10,000 Poisson draws (seeded)&lt;br/&gt;Uncertainty from training residuals&lt;br/&gt;→ P(Home Win) · P(Draw) · P(Away)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;arcSize=10;" vertex="1" parent="1">
+      <mxGeometry x="460" y="660" width="240" height="90" as="geometry" />
+    </mxCell>
+
+    <!-- Skellam CI -->
+    <mxCell id="skellam" value="&lt;b&gt;Skellam Distribution CI&lt;/b&gt;&lt;br/&gt;95% confidence interval on goal diff&lt;br/&gt;Margin of error estimate" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;arcSize=10;" vertex="1" parent="1">
+      <mxGeometry x="730" y="660" width="230" height="90" as="geometry" />
+    </mxCell>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- LAYER 4: MARKET INTELLIGENCE                                        -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+
+    <!-- DK Blend -->
+    <mxCell id="dk_blend" value="&lt;b&gt;DraftKings Market Blend&lt;/b&gt;&lt;br/&gt;De-vig 3-way moneyline → fair probs&lt;br/&gt;O/U → market total goals&lt;br/&gt;Geometric blend with model λ (0-100%)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;arcSize=10;" vertex="1" parent="1">
+      <mxGeometry x="300" y="770" width="270" height="90" as="geometry" />
+    </mxCell>
+
+    <!-- Polymarket Panel -->
+    <mxCell id="poly_panel" value="&lt;b&gt;Polymarket Intelligence Panel&lt;/b&gt;&lt;br/&gt;WC winner implied probs per team&lt;br/&gt;Relative tournament strength ratio&lt;br/&gt;Refreshed every 5 minutes" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;arcSize=10;" vertex="1" parent="1">
+      <mxGeometry x="620" y="770" width="270" height="90" as="geometry" />
+    </mxCell>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- LAYER 5: UI                                                         -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+
+    <!-- Main Predictor Page -->
+    <mxCell id="ui_pred" value="&lt;b&gt;Main Predictor Page&lt;/b&gt; (wc2026_ui.py)&lt;br/&gt;Team selector · Stage · Venue flags&lt;br/&gt;Injury multiselect · Market toggle&lt;br/&gt;Results: scoreline · probs · goal diff CI&lt;br/&gt;Squad panel · Form banner · Top scorers" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;arcSize=10;" vertex="1" parent="1">
+      <mxGeometry x="200" y="1000" width="280" height="110" as="geometry" />
+    </mxCell>
+
+    <!-- Expert Analysis Page -->
+    <mxCell id="ui_expert" value="&lt;b&gt;Expert Analysis Page&lt;/b&gt;&lt;br/&gt;Tab 1: URL scrape → AI extraction&lt;br/&gt;Tab 2: Report library&lt;br/&gt;Tab 3: AI Analyst (RAG / direct)&lt;br/&gt;FAISS · LangChain · Ollama (BYOK)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;arcSize=10;" vertex="1" parent="1">
+      <mxGeometry x="530" y="1000" width="270" height="110" as="geometry" />
+    </mxCell>
+
+    <!-- Saved Predictions -->
+    <mxCell id="ui_saved" value="&lt;b&gt;Saved Predictions Page&lt;/b&gt;&lt;br/&gt;In-session memory only (session_state)&lt;br/&gt;Never written to disk · cleared on tab close&lt;br/&gt;Compare multiple matchup predictions" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;arcSize=10;" vertex="1" parent="1">
+      <mxGeometry x="850" y="1000" width="270" height="110" as="geometry" />
+    </mxCell>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- EDGES: Data Sources → Cache                                         -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#6c8ebf;" edge="1" source="kaggle" target="hist_pq" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.2;entryY=0;entryDx=0;entryDy=0;strokeColor=#6c8ebf;" edge="1" source="espn" target="wc_pq" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <mxCell id="e3" style="edgeStyle=orthogonalEdgeStyle;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#6c8ebf;" edge="1" source="elo_src" target="elo_pq" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <mxCell id="e4" style="edgeStyle=orthogonalEdgeStyle;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#6c8ebf;" edge="1" source="espn" target="stats_pq" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <mxCell id="e5" style="edgeStyle=orthogonalEdgeStyle;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#6c8ebf;" edge="1" source="espn" target="meta_json" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- EDGES: Cache → Feature Engineering                                  -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <mxCell id="e6" style="edgeStyle=orthogonalEdgeStyle;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.2;entryY=0;entryDx=0;entryDy=0;strokeColor=#82b366;" edge="1" source="hist_pq" target="feat_eng" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <mxCell id="e7" style="edgeStyle=orthogonalEdgeStyle;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.3;entryY=0;entryDx=0;entryDy=0;strokeColor=#82b366;" edge="1" source="wc_pq" target="feat_eng" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <mxCell id="e8" style="edgeStyle=orthogonalEdgeStyle;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.7;entryY=0;entryDx=0;entryDy=0;strokeColor=#82b366;" edge="1" source="elo_pq" target="feat_eng" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- Player stats → Form adjustment -->
+    <mxCell id="e9" style="edgeStyle=orthogonalEdgeStyle;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#82b366;" edge="1" source="stats_pq" target="form_adj" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- Player stats → Injury (suspension detection) -->
+    <mxCell id="e10" style="edgeStyle=orthogonalEdgeStyle;html=1;exitX=0.8;exitY=1;exitDx=0;exitDy=0;entryX=0.2;entryY=0;entryDx=0;entryDy=0;strokeColor=#82b366;" edge="1" source="stats_pq" target="injury_adj" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- EDGES: Features → GLM → Monte Carlo                                -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <mxCell id="e11" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#82b366;" edge="1" source="feat_eng" target="glm" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <mxCell id="e12" value="λ_home, λ_away" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#82b366;fontSize=9;" edge="1" source="glm" target="mc" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- Form adj → Monte Carlo -->
+    <mxCell id="e13" value="atk/def mult" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#82b366;fontSize=9;" edge="1" source="form_adj" target="mc" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- Injury adj → Monte Carlo -->
+    <mxCell id="e14" value="atk/def penalty" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#82b366;fontSize=9;" edge="1" source="injury_adj" target="mc" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- MC → Skellam CI -->
+    <mxCell id="e15" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#82b366;" edge="1" source="mc" target="skellam" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- EDGES: Market Intelligence                                          -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <mxCell id="e16" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#d6b656;" edge="1" source="dk_src" target="dk_blend" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <mxCell id="e17" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#d6b656;" edge="1" source="poly_src" target="poly_panel" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- GLM output feeds into DK blend -->
+    <mxCell id="e18" value="model λ" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#d6b656;fontSize=9;" edge="1" source="glm" target="dk_blend" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- EDGES: → UI                                                         -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <mxCell id="e19" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#9673a6;" edge="1" source="mc" target="ui_pred" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <mxCell id="e20" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#9673a6;" edge="1" source="skellam" target="ui_pred" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <mxCell id="e21" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#9673a6;" edge="1" source="dk_blend" target="ui_pred" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <mxCell id="e22" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#9673a6;" edge="1" source="poly_panel" target="ui_pred" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <mxCell id="e23" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#9673a6;" edge="1" source="ui_pred" target="ui_saved" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <mxCell id="e24" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#9673a6;" edge="1" source="stats_pq" target="ui_pred" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- EXPERT ANALYSIS SUBGRAPH                                            -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+
+    <!-- FAISS vector store -->
+    <mxCell id="faiss" value="&lt;b&gt;FAISS Vector Store&lt;/b&gt;&lt;br/&gt;Embedded match reports&lt;br/&gt;LangChain text splitter" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="1150" y="1000" width="190" height="90" as="geometry" />
+    </mxCell>
+
+    <!-- Ollama LLM -->
+    <mxCell id="ollama" value="&lt;b&gt;Ollama LLM (BYOK)&lt;/b&gt;&lt;br/&gt;OpenAI-compatible API&lt;br/&gt;RAG mode or direct mode" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;arcSize=10;" vertex="1" parent="1">
+      <mxGeometry x="1380" y="1000" width="190" height="90" as="geometry" />
+    </mxCell>
+
+    <mxCell id="e25" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#9673a6;" edge="1" source="faiss" target="ui_expert" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <mxCell id="e26" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#9673a6;" edge="1" source="ollama" target="ui_expert" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- LEGEND                                                              -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <mxCell id="legend" value="&lt;b&gt;Legend&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="1390" y="150" width="80" height="20" as="geometry" />
+    </mxCell>
+    <mxCell id="lg1" value="Data Sources" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="1390" y="175" width="130" height="30" as="geometry" />
+    </mxCell>
+    <mxCell id="lg2" value="Parquet / JSON Cache" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=8;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="1390" y="215" width="130" height="40" as="geometry" />
+    </mxCell>
+    <mxCell id="lg3" value="Model / Simulation" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="1390" y="265" width="130" height="30" as="geometry" />
+    </mxCell>
+    <mxCell id="lg4" value="Market Intelligence" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="1390" y="305" width="130" height="30" as="geometry" />
+    </mxCell>
+    <mxCell id="lg5" value="UI / Output" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="1390" y="345" width="130" height="30" as="geometry" />
+    </mxCell>
+
+  </root>
+</mxGraphModel>
