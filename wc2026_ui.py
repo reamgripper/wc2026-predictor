@@ -746,8 +746,24 @@ def chart_elo_bar(home, away, h_elo, a_elo):
     return fig
 
 # ── Squad panel ───────────────────────────────────────────────────────────────
+def _cb_save_injuries(team_name, names):
+    """Save the ticked players as this team's injured set (on_click callback)."""
+    chosen = {n for n in names if st.session_state.get(f"injchk::{team_name}::{n}")}
+    st.session_state[f"injured::{team_name}"] = chosen
+    st.session_state["_apply_injuries"] = True
+
+
+def _cb_clear_injuries(team_name, names):
+    """Untick every player and clear the injured set (on_click callback).
+    Runs before widgets re-instantiate, so modifying the checkbox keys is safe."""
+    for n in names:
+        st.session_state[f"injchk::{team_name}::{n}"] = False
+    st.session_state[f"injured::{team_name}"] = set()
+    st.session_state["_apply_injuries"] = True
+
+
 def squad_panel(players, team_name, atk_adj, def_adj, form: dict = None,
-                player_stats_df=None):
+                player_stats_df=None, editable: bool = True):
     if not players:
         st.caption(f"No ESPN squad data available for {team_name}.")
         return
@@ -799,20 +815,24 @@ def squad_panel(players, team_name, atk_adj, def_adj, form: dict = None,
             unsafe_allow_html=True,
         )
 
-    # ── Editing controls ──────────────────────────────────────────────────────
-    st.markdown(
-        "<div style='font-size:.76rem;color:rgba(255,255,255,0.42);margin:2px 0 6px;'>"
-        "Tick players who are injured or unavailable, then press "
-        "<b>Save &amp; re-run</b> to apply them to the prediction.</div>",
-        unsafe_allow_html=True,
-    )
-    _sc1, _sc2, _ = st.columns([1.4, 1, 4])
-    with _sc1:
-        save_clicked = st.button("💾 Save & re-run", key=f"savechk::{team_name}",
-                                 use_container_width=True, type="primary")
-    with _sc2:
-        clear_clicked = st.button("Clear", key=f"clearchk::{team_name}",
-                                  use_container_width=True)
+    # ── Editing controls (admin only) ─────────────────────────────────────────
+    if editable:
+        _names = [p["name"] for p in players]
+        st.markdown(
+            "<div style='font-size:.76rem;color:rgba(255,255,255,0.42);margin:2px 0 6px;'>"
+            "Tick players who are injured or unavailable, then press "
+            "<b>Save &amp; re-run</b> to apply them to the prediction.</div>",
+            unsafe_allow_html=True,
+        )
+        _sc1, _sc2, _ = st.columns([1.4, 1, 4])
+        with _sc1:
+            st.button("💾 Save & re-run", key=f"savechk::{team_name}",
+                      use_container_width=True, type="primary",
+                      on_click=_cb_save_injuries, args=(team_name, _names))
+        with _sc2:
+            st.button("Clear", key=f"clearchk::{team_name}",
+                      use_container_width=True,
+                      on_click=_cb_clear_injuries, args=(team_name, _names))
 
     # Build per-player WC 2026 stat lookup
     player_stat_map: dict = {}
@@ -837,11 +857,16 @@ def squad_panel(players, team_name, atk_adj, def_adj, form: dict = None,
             if ck not in st.session_state:
                 # Seed once from the saved set (which itself starts from ESPN injuries)
                 st.session_state[ck] = p["name"] in saved
-            c1, c2 = st.columns([1, 18])
-            with c1:
-                st.checkbox("unavailable", key=ck, label_visibility="collapsed")
-            with c2:
+            if editable:
+                c1, c2 = st.columns([1, 18])
+                with c1:
+                    st.checkbox("unavailable", key=ck, label_visibility="collapsed")
+                cell = c2
                 checked = st.session_state[ck]
+            else:                                    # visitor: static, no checkbox
+                cell = st.container()
+                checked = p["name"] in saved
+            with cell:
                 ps = player_stat_map.get(p["name"], {})
                 badges = []
                 if ps.get("goals"):   badges.append(f"⚽{ps['goals']}")
@@ -870,19 +895,8 @@ def squad_panel(players, team_name, atk_adj, def_adj, form: dict = None,
                         unsafe_allow_html=True,
                     )
 
-    # ── Apply Save / Clear (read AFTER widgets so checkbox state is current) ───
-    if clear_clicked:
-        for p in players:
-            st.session_state[f"injchk::{team_name}::{p['name']}"] = False
-        st.session_state[f"injured::{team_name}"] = set()
-        st.session_state["_apply_injuries"] = True
-        st.rerun()
-    if save_clicked:
-        chosen = {p["name"] for p in players
-                  if st.session_state.get(f"injchk::{team_name}::{p['name']}")}
-        st.session_state[f"injured::{team_name}"] = chosen
-        st.session_state["_apply_injuries"] = True
-        st.rerun()
+    # Save / Clear are handled by their on_click callbacks (which run before the
+    # checkbox widgets re-instantiate, so they can safely modify the keys).
 
 # ─────────────────────────────────────────────────────────────────────────────
 # SIDEBAR
@@ -926,82 +940,111 @@ with st.sidebar:
     _default_h = team_options.index(_next_home) if _next_home in team_options else 0
     _default_a = team_options.index(_next_away) if _next_away in team_options else min(1, len(team_options)-1)
 
-    st.markdown("<div class='sh'>Match Setup</div>", unsafe_allow_html=True)
-    home_team = st.selectbox("Team A", team_options, index=_default_h,
-                              label_visibility="visible")
-    away_team = st.selectbox("Team B", team_options, index=_default_a,
-                              label_visibility="visible")
-
-    # Host auto-detection
-    home_is_host = home_team in WC2026_HOSTS
-    away_is_host = away_team in WC2026_HOSTS
-    host_labels  = [t for t in [home_team, away_team] if t in WC2026_HOSTS]
-    if host_labels:
+    if is_admin:
+        st.markdown("<div class='sh'>Match Setup</div>", unsafe_allow_html=True)
+        home_team = st.selectbox("Team A", team_options, index=_default_h,
+                                  label_visibility="visible")
+        away_team = st.selectbox("Team B", team_options, index=_default_a,
+                                  label_visibility="visible")
+    else:
+        # Visitor: locked to the next upcoming fixture — read-only preview.
+        home_team, away_team = _next_home, _next_away
+        st.markdown("<div class='sh'>Next match</div>", unsafe_allow_html=True)
         st.markdown(
-            f"<div style='background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.30);"
-            f"border-radius:12px;padding:8px 12px;font-size:.78rem;color:#92400e;margin:6px 0;'>"
-            f"🏠 <b>Host nation{'s' if len(host_labels)>1 else ''}:</b> {', '.join(host_labels)}</div>",
+            f"<div style='background:rgba(255,255,255,0.05);border:1px solid "
+            f"rgba(255,255,255,0.10);border-radius:12px;padding:12px 14px;"
+            f"font-size:0.95rem;color:rgba(255,255,255,0.88);text-align:center;'>"
+            f"<b>{home_team}</b> &nbsp;vs&nbsp; <b>{away_team}</b></div>"
+            "<div style='font-size:0.74rem;color:rgba(255,255,255,0.45);margin-top:8px;'>"
+            "👁 Read-only preview of the next fixture. Log out and enter the admin "
+            "password to simulate any matchup.</div>",
             unsafe_allow_html=True,
         )
 
-    st.divider()
-    st.markdown("<div class='sh'>Context</div>", unsafe_allow_html=True)
-    stage   = st.selectbox("Stage", ["Group Stage","Round of 32","Round of 16",
-                                      "Quarter-Final","Semi-Final","Final"])
-    neutral = st.toggle("Neutral Venue", value=True)
+    # Host auto-detection (both modes)
+    home_is_host = home_team in WC2026_HOSTS
+    away_is_host = away_team in WC2026_HOSTS
 
-    st.divider()
-    st.markdown("<div class='sh'>Options</div>", unsafe_allow_html=True)
-    include_squad = st.toggle("Squad & injury data", value=True,
-                               help="WC 2026 squads from ESPN — add injured players manually below")
+    if is_admin:
+        host_labels = [t for t in [home_team, away_team] if t in WC2026_HOSTS]
+        if host_labels:
+            st.markdown(
+                f"<div style='background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.30);"
+                f"border-radius:12px;padding:8px 12px;font-size:.78rem;color:#92400e;margin:6px 0;'>"
+                f"🏠 <b>Host nation{'s' if len(host_labels)>1 else ''}:</b> {', '.join(host_labels)}</div>",
+                unsafe_allow_html=True,
+            )
 
-    if include_squad:
-        # Pre-fetch squads (cached) so we can seed each team's injured list.
-        _h_squad_pre, _, _, _ = get_squad_cached(home_team, True)
-        _a_squad_pre, _, _, _ = get_squad_cached(away_team, True)
+        st.divider()
+        st.markdown("<div class='sh'>Context</div>", unsafe_allow_html=True)
+        stage   = st.selectbox("Stage", ["Group Stage","Round of 32","Round of 16",
+                                          "Quarter-Final","Semi-Final","Final"])
+        neutral = st.toggle("Neutral Venue", value=True)
 
-        # Injured players are now ticked directly in the squad list below the
-        # results. We keep one saved set per team in session_state (browser
-        # session only — never written to disk), seeded once from ESPN's
-        # reported injuries. The user can override it and Save.
-        for _team, _sq in ((home_team, _h_squad_pre), (away_team, _a_squad_pre)):
+        st.divider()
+        st.markdown("<div class='sh'>Options</div>", unsafe_allow_html=True)
+        include_squad = st.toggle("Squad & injury data", value=True,
+                                   help="WC 2026 squads from ESPN — add injured players manually below")
+
+        if include_squad:
+            _h_squad_pre, _, _, _ = get_squad_cached(home_team, True)
+            _a_squad_pre, _, _, _ = get_squad_cached(away_team, True)
+            for _team, _sq in ((home_team, _h_squad_pre), (away_team, _a_squad_pre)):
+                _key = f"injured::{_team}"
+                if _key not in st.session_state:
+                    st.session_state[_key] = {p["name"] for p in _sq if p.get("is_injured")}
+            h_injury_names = sorted(st.session_state.get(f"injured::{home_team}", set()))
+            a_injury_names = sorted(st.session_state.get(f"injured::{away_team}", set()))
+            st.markdown(
+                "<div style='font-size:.75rem;color:rgba(255,255,255,0.45);margin:6px 0 2px;'>"
+                f"⚠️ Unavailable &nbsp;·&nbsp; {home_team}: <b>{len(h_injury_names)}</b>"
+                f" &nbsp;·&nbsp; {away_team}: <b>{len(a_injury_names)}</b><br>"
+                "<span style='opacity:.85;'>Tick players in the squad list below the "
+                "results, then <b>Save</b>.</span></div>",
+                unsafe_allow_html=True,
+            )
+        else:
+            h_injury_names, a_injury_names = [], []
+
+        use_market = st.toggle("Betting market odds", value=True,
+                                help="Blend DraftKings market odds into the prediction "
+                                     "(only available for scheduled WC 2026 fixtures)")
+        market_weight = st.slider(
+            "Market influence", 0.0, 1.0, 0.50, step=0.05,
+            help="0 = pure statistical model · 1 = pure betting market · "
+                 "0.5 = equal blend",
+            disabled=not use_market,
+        )
+        poly_match_url = st.text_input(
+            "Polymarket match URL (optional)",
+            key="poly_match_url",
+            placeholder="https://polymarket.com/event/…",
+            help="Paste the Polymarket page for this exact match to force its odds "
+                 "if auto-detection misses it. Leave blank to auto-detect.",
+            disabled=not use_market,
+        )
+        n_sims  = st.slider("Monte Carlo draws", 1_000, 50_000, 10_000, step=1_000)
+        run_btn = st.button("Run Simulation ›", use_container_width=True, type="primary")
+    else:
+        # Visitor: fixed sensible defaults; no controls. Auto-computes the
+        # prediction for the locked fixture (and refreshes if a stale result
+        # from a prior admin session is in memory).
+        stage = "Group Stage"
+        neutral = True
+        include_squad = True
+        for _team in (home_team, away_team):
+            _sq, _, _, _ = get_squad_cached(_team, True)
             _key = f"injured::{_team}"
             if _key not in st.session_state:
                 st.session_state[_key] = {p["name"] for p in _sq if p.get("is_injured")}
-
         h_injury_names = sorted(st.session_state.get(f"injured::{home_team}", set()))
         a_injury_names = sorted(st.session_state.get(f"injured::{away_team}", set()))
-
-        st.markdown(
-            "<div style='font-size:.75rem;color:rgba(255,255,255,0.45);margin:6px 0 2px;'>"
-            f"⚠️ Unavailable &nbsp;·&nbsp; {home_team}: <b>{len(h_injury_names)}</b>"
-            f" &nbsp;·&nbsp; {away_team}: <b>{len(a_injury_names)}</b><br>"
-            "<span style='opacity:.85;'>Tick players in the squad list below the "
-            "results, then <b>Save</b>.</span></div>",
-            unsafe_allow_html=True,
-        )
-    else:
-        h_injury_names, a_injury_names = [], []
-
-    use_market = st.toggle("Betting market odds", value=True,
-                            help="Blend DraftKings market odds into the prediction "
-                                 "(only available for scheduled WC 2026 fixtures)")
-    market_weight = st.slider(
-        "Market influence", 0.0, 1.0, 0.50, step=0.05,
-        help="0 = pure statistical model · 1 = pure betting market · "
-             "0.5 = equal blend",
-        disabled=not use_market,
-    )
-    poly_match_url = st.text_input(
-        "Polymarket match URL (optional)",
-        key="poly_match_url",
-        placeholder="https://polymarket.com/event/…",
-        help="Paste the Polymarket page for this exact match to force its odds "
-             "if auto-detection misses it. Leave blank to auto-detect.",
-        disabled=not use_market,
-    )
-    n_sims  = st.slider("Monte Carlo draws", 1_000, 50_000, 10_000, step=1_000)
-    run_btn = st.button("Run Simulation ›", use_container_width=True, type="primary")
+        use_market = True
+        market_weight = 0.50
+        poly_match_url = ""
+        n_sims = 10_000
+        run_btn = (st.session_state.get("home") != home_team
+                   or st.session_state.get("away") != away_team)
 
     # Refresh / rebuild buttons — admin only (they mutate the shared cache)
     from fifa_wc2026_predictor import HIST_PARQUET, CACHE_DIR
@@ -1621,10 +1664,10 @@ if include_squad and (h_squad or a_squad):
     tab_home, tab_away = st.tabs([f"  {home}  ", f"  {away}  "])
     with tab_home:
         squad_panel(h_squad, home, h_atk_adj, h_def_adj,
-                    form=h_form, player_stats_df=_player_stats_df)
+                    form=h_form, player_stats_df=_player_stats_df, editable=is_admin)
     with tab_away:
         squad_panel(a_squad, away, a_atk_adj, a_def_adj,
-                    form=a_form, player_stats_df=_player_stats_df)
+                    form=a_form, player_stats_df=_player_stats_df, editable=is_admin)
 
 # ── AI Analysis (bring-your-own-key LLM) ──────────────────────────────────────
 st.divider()
