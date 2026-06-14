@@ -482,6 +482,25 @@ hr { border-color: rgba(255,255,255,0.07) !important; margin: 16px 0 !important;
 [data-testid="stDialog"] label, [data-testid="stDialog"] p, [data-testid="stDialog"] span,
 div[role="dialog"] label, div[role="dialog"] p, div[role="dialog"] span {
   color: rgba(255,255,255,0.85) !important; }
+
+/* ── Sidebar collapse control: kill the Material Symbols ligature ghost
+     ("keyboard_double_arrow_left" → shows as raw "keyb" when the icon font
+     fails) and draw our own chevron, same approach as the expander fix. ── */
+[data-testid="stSidebarCollapseButton"],
+[data-testid="stSidebarCollapsedControl"],
+[data-testid="collapsedControl"] { position: relative !important; }
+[data-testid="stSidebarCollapseButton"] *,
+[data-testid="stSidebarCollapsedControl"] *,
+[data-testid="collapsedControl"] * { font-size: 0 !important; }
+[data-testid="stSidebarCollapseButton"]::after { content: "‹"; }
+[data-testid="stSidebarCollapsedControl"]::after,
+[data-testid="collapsedControl"]::after { content: "›"; }
+[data-testid="stSidebarCollapseButton"]::after,
+[data-testid="stSidebarCollapsedControl"]::after,
+[data-testid="collapsedControl"]::after {
+  position: absolute; inset: 0; display: flex; align-items: center;
+  justify-content: center; font-size: 1.15rem !important; line-height: 1;
+  color: rgba(255,255,255,0.55); pointer-events: none; }
 </style>
 """, unsafe_allow_html=True)
 
