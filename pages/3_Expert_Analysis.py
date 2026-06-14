@@ -122,6 +122,12 @@ h2 { font-size: 1.35rem !important; }
 
 /* ── code blocks ── */
 pre { background: rgba(0,0,0,0.35) !important; border-radius: 10px !important; font-size: 0.8rem !important; }
+/* Lock to the dark design — hide the theme switcher; keep chrome dark. */
+#MainMenu, [data-testid="stMainMenu"] { display: none !important; }
+[data-testid="stHeader"], header[data-testid="stHeader"],
+[data-testid="stToolbar"] { background: transparent !important; }
+[data-testid="stDialog"] > div, div[role="dialog"] {
+  background: #16161f !important; color: rgba(255,255,255,0.90) !important; }
 </style>
 """, unsafe_allow_html=True)
 

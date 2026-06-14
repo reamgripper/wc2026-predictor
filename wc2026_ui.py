@@ -470,6 +470,18 @@ div[data-testid="metric-container"] [data-testid="stMetricValue"] {
 
 /* Divider */
 hr { border-color: rgba(255,255,255,0.07) !important; margin: 16px 0 !important; }
+
+/* ── Lock to the dark design ──
+   Remove the theme switcher so a Light selection can't break the custom dark
+   CSS, and keep Streamlit's own chrome dark + readable either way. */
+#MainMenu, [data-testid="stMainMenu"] { display: none !important; }
+[data-testid="stHeader"], header[data-testid="stHeader"],
+[data-testid="stToolbar"] { background: transparent !important; }
+[data-testid="stDialog"] > div, div[role="dialog"] {
+  background: #16161f !important; color: rgba(255,255,255,0.90) !important; }
+[data-testid="stDialog"] label, [data-testid="stDialog"] p, [data-testid="stDialog"] span,
+div[role="dialog"] label, div[role="dialog"] p, div[role="dialog"] span {
+  color: rgba(255,255,255,0.85) !important; }
 </style>
 """, unsafe_allow_html=True)
 

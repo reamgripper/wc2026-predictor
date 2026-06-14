@@ -100,6 +100,12 @@ hr { border-color: rgba(255,255,255,0.08) !important; margin: 28px 0 !important;
             border-radius:10px; padding:8px 14px; font-size:0.83rem;
             color:rgba(255,255,255,0.75); white-space:nowrap; }
 .flow-arrow { color:rgba(255,255,255,0.30); font-size:1.1rem; }
+/* Lock to the dark design — hide the theme switcher; keep chrome dark. */
+#MainMenu, [data-testid="stMainMenu"] { display: none !important; }
+[data-testid="stHeader"], header[data-testid="stHeader"],
+[data-testid="stToolbar"] { background: transparent !important; }
+[data-testid="stDialog"] > div, div[role="dialog"] {
+  background: #16161f !important; color: rgba(255,255,255,0.90) !important; }
 </style>
 """, unsafe_allow_html=True)
 

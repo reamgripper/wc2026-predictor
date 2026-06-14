@@ -1,5 +1,11 @@
+# The app is a dark "glass" design. Pin a full dark theme so Streamlit's own
+# widgets/chrome render dark too, and the app never depends on the OS setting.
 [theme]
 base = "dark"
+primaryColor = "#0A84FF"
+backgroundColor = "#060608"
+secondaryBackgroundColor = "#16161f"
+textColor = "#FFFFFF"
 
 [server]
 headless = true
