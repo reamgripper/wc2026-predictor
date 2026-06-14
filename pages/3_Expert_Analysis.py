@@ -161,8 +161,8 @@ def _ss(key: str, default=None):
 
 def _llm_cfg():
     """Pull LLM config from session state (shared with main app if already set)."""
-    base = st.session_state.get("ea_base_url") or st.session_state.get("llm_base_url", "http://localhost:11434")
-    model = st.session_state.get("ea_model") or st.session_state.get("llm_model", "llama3")
+    base = st.session_state.get("ea_base_url") or st.session_state.get("llm_base_url", "http://127.0.0.1:11434/v1")
+    model = st.session_state.get("ea_model") or st.session_state.get("llm_model", "deepseek-r1:1.5b")
     return base, model
 
 
@@ -174,7 +174,7 @@ _ss("ea_extracted", {})
 _ss("ea_rag_engine", None)
 _ss("ea_rag_built_slugs", [])
 _ss("ea_chat_history", [])
-_ss("ea_base_url", "http://localhost:11434")
+_ss("ea_base_url", "http://127.0.0.1:11434/v1")
 _ss("ea_model", "deepseek-r1:1.5b")
 
 # ── Header ────────────────────────────────────────────────────────────────────
@@ -268,7 +268,7 @@ with tab_scrape:
         # Compact LLM config for this tab
         with st.expander("⚙️ LLM config for extraction"):
             st.text_input("Ollama base URL", key="ea_base_url",
-                          help="Default: http://localhost:11434")
+                          help="Default: http://127.0.0.1:11434/v1")
             st.text_input("Model", key="ea_model",
                           help="e.g. deepseek-r1:1.5b  llama3  mistral")
             st.caption("Uses the same Ollama instance as the main app predictor.")
@@ -472,7 +472,7 @@ with tab_analyst:
     with st.expander("⚙️ LLM config (Ollama)"):
         col_url, col_mdl = st.columns(2)
         col_url.text_input("Base URL", key="ea_base_url",
-                           help="Ollama native endpoint, e.g. http://localhost:11434")
+                           help="Ollama endpoint, e.g. http://127.0.0.1:11434/v1")
         col_mdl.text_input("Model", key="ea_model",
                            help="e.g. deepseek-r1:1.5b  llama3  mistral  qwen2.5")
         st.caption(

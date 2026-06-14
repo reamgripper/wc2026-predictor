@@ -1586,8 +1586,8 @@ from llm_analyst import build_match_payload, stream_analysis
 # through the OpenAI chat API shape, so one code path works for all of them.
 LLM_PRESETS = {
     "Ollama (local · free)": {
-        "base_url": "http://localhost:11434/v1",
-        "model": "qwen2.5", "needs_key": False,
+        "base_url": "http://127.0.0.1:11434/v1",
+        "model": "deepseek-r1:1.5b", "needs_key": False,
     },
     "OpenRouter": {
         "base_url": "https://openrouter.ai/api/v1",
@@ -1624,7 +1624,7 @@ with st.expander("⚙️  LLM settings — bring your own key"):
     base_url = st.text_input("Base URL", key="llm_base_url",
                              placeholder="https://...")
     model    = st.text_input("Model", key="llm_model",
-                             placeholder="qwen2.5 / qwen/qwen-2.5-72b-instruct / ...")
+                             placeholder="deepseek-r1:1.5b / qwen/qwen-2.5-72b-instruct / ...")
     api_key  = st.text_input(
         "API key", type="password", key="llm_api_key",
         help="Held only in this browser session's memory. Never written to "
