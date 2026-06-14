@@ -146,11 +146,17 @@ with right:
     )
     links = ""
     li = meta.get("LINKEDIN", "").strip()
+    gh = meta.get("GITHUB", "").strip()
     em = meta.get("EMAIL", "").strip()
+    # Tolerate the user pasting "mailto:" (or a leading space) into EMAIL.
+    if em.lower().startswith("mailto:"):
+        em = em[len("mailto:"):].strip()
     if li:
-        links += f"<a class='contact' href='{li}' target='_blank'>in&nbsp; LinkedIn</a>"
+        links += f"<a class='contact' href='{li}' target='_blank' rel='noopener'>in&nbsp; LinkedIn</a>"
+    if gh:
+        links += f"<a class='contact' href='{gh}' target='_blank' rel='noopener'>&#9670;&nbsp; GitHub</a>"
     if em:
-        links += f"<a class='contact' href='mailto:{em}'>✉&nbsp; {em}</a>"
+        links += f"<a class='contact' href='mailto:{em}'>&#9993;&nbsp; {em}</a>"
     if links:
         st.markdown(f"<div style='margin-top:14px'>{links}</div>", unsafe_allow_html=True)
 

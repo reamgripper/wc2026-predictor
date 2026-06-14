@@ -10,12 +10,13 @@
 ;;              its path here. If the file is missing, a placeholder is shown.
 ;;   LINKEDIN : your LinkedIn profile URL.
 ;;   EMAIL    : your contact email address.
+;;   GITHUB   : your GitHub profile URL.
 ;; ============================================================================
 
 PHOTO: assets/about_me.jpg
 LINKEDIN: https://www.linkedin.com/in/samratr/
-EMAIL: rsamrat@dontsp.am 
-
+EMAIL: rsamrat@dontsp.am
+GITHUB: https://github.com/reamgripper/wc2026-predictor
 ---
 
 
@@ -28,7 +29,8 @@ For a long time, there was just one catch: I used to hate writing code from scra
 That hurdle completely vanished with the advent of Large Language Models. Now, before my software engineering friends get defensive, let me clarify: I am not suggesting I’m building full-stack applications or managing secure, stable enterprise deployments. That remains firmly in the domain of engineering experts. But we all have to accept the reality that "Intent driven Coding" is the future. I highly recommend watching this keynote by Andrew Ng on 
 <a href="https://www.youtube.com/watch?v=g8um2AEf5ZA" target="_blank">the future of software engineering</a>.
 
-What LLMs do allow me to do is bridge the gap between theory and execution. They handle the syntax so I can focus on the strategy - accelerating how I write code to build complex mathematical models for real-world decision-making. Before I explain my weekend project, let me tell you an ancient indian fable which talks about the perils of believing in crowd wisdom. A priest was walking home, carrying a healthy goat he had received as a reward for his services. Along his journey, he encountered three tricksters stationed at different intervals along the road, each determined to steal the animal without using force.
+What LLMs do allow me to do is bridge the gap between theory and execution. They handle the syntax so I can focus on the strategy - accelerating how I write code to build complex mathematical models for real-world decision-making. And that is why i decided to embark on a weekend project right before the start of World Cup 2026.
+Before I explain my weekend project, let me tell you an ancient indian fable which talks about the perils of believing in crowd wisdom. A priest was walking home, carrying a healthy goat he had received as a reward for his services. Along his journey, he encountered three tricksters stationed at different intervals along the road, each determined to steal the animal without using force.
 
 Instead of attacking, they chose to manipulate his reality.
 
@@ -52,4 +54,6 @@ So i decided to look up the bets on Draftkings and Polymarket. I noticed that th
 I decided to blend data from both the models into the prediction model and Viola!! 
 So far the model is holding well but i will keep you posted on how this evolves. 
 Let us not forget, no mathematical model can predict human will, a key determinant in outcome of matches.
+
+To be continued...
 
