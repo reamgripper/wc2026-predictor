@@ -739,7 +739,11 @@ def load_wc2026_cached() -> pd.DataFrame:
         cached = pd.read_parquet(WC2026_PARQUET)
 
     print("  Checking ESPN for new WC 2026 results ...")
-    live = fetch_wc2026_results()
+    try:
+        live = fetch_wc2026_results()
+    except Exception as exc:
+        print(f"    ⚠ ESPN fetch failed ({exc}); using {len(cached)} cached result(s).")
+        live = pd.DataFrame()
 
     if live.empty and cached.empty:
         return pd.DataFrame()
@@ -789,17 +793,32 @@ def load_elo_cached() -> Dict[str, float]:
                       f"{len(elo)} teams).")
                 return elo
 
-    elo_by_code = fetch_elo_ratings()
-    code_to_name = _elo_code_to_name_map()
-    elo_by_name = {code_to_name[c]: v for c, v in elo_by_code.items()
-                   if c in code_to_name}
+    # Live (re)fetch — but never let a blocked/failed request crash the app.
+    # Fall back to the cached parquet (even if stale) when the source is
+    # unreachable, e.g. eloratings.net blocking a cloud datacenter IP.
+    try:
+        elo_by_code = fetch_elo_ratings()
+        code_to_name = _elo_code_to_name_map()
+        elo_by_name = {code_to_name[c]: v for c, v in elo_by_code.items()
+                       if c in code_to_name}
+        if not elo_by_name:
+            raise RuntimeError("empty ELO response")
 
-    elo_df = pd.DataFrame({"name": list(elo_by_name.keys()),
-                            "elo":  list(elo_by_name.values())})
-    elo_df.to_parquet(ELO_PARQUET, index=False)
-    meta["elo_fetched_at"] = _now_iso()
-    _write_meta(meta)
-    return elo_by_name
+        elo_df = pd.DataFrame({"name": list(elo_by_name.keys()),
+                                "elo":  list(elo_by_name.values())})
+        elo_df.to_parquet(ELO_PARQUET, index=False)
+        meta["elo_fetched_at"] = _now_iso()
+        _write_meta(meta)
+        return elo_by_name
+    except Exception as exc:
+        if ELO_PARQUET.exists():
+            elo_df = pd.read_parquet(ELO_PARQUET)
+            elo = dict(zip(elo_df["name"], elo_df["elo"]))
+            print(f"  ⚠ ELO live fetch failed ({exc}); using cached "
+                  f"parquet ({len(elo)} teams).")
+            return elo
+        print(f"  ⚠ ELO live fetch failed ({exc}) and no cache available.")
+        return {}
 
 
 # ─────────────────────────────────────────────────────────────────────────────
