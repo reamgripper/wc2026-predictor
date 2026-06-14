@@ -15,6 +15,7 @@ from fifa_wc2026_predictor import (
     fetch_match_odds, blend_lambdas,
     compute_team_form, tournament_form_lambda_adjustment,
     fetch_polymarket_wc_odds_all, fetch_polymarket_team_odds,
+    fetch_polymarket_match_odds,
     _wc_stats_for,
     HIST_PARQUET, CACHE_DIR,
 )
@@ -574,6 +575,11 @@ def get_odds_cached(home, away, use_market):
 def get_polymarket_odds_cached():
     """All Polymarket WC 2026 winner odds (cached 5 min)."""
     return fetch_polymarket_wc_odds_all()
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_polymarket_match_cached(home, away):
+    """Polymarket per-match odds for this fixture (cached 5 min). None if absent."""
+    return fetch_polymarket_match_odds(home, away)
 
 # ── MC helper ─────────────────────────────────────────────────────────────────
 def _mc(lh, la, hu, au, n, seed=42):
@@ -1282,13 +1288,20 @@ for col, val, lbl, color in cards:
 st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
 
 # ── Model vs Market vs Blended comparison ─────────────────────────────────────
-if blend_applied and odds:
+poly_match = get_polymarket_match_cached(home, away) if use_market else None
+
+if (blend_applied and odds) or poly_match:
     st.divider()
+    _providers = []
+    if blend_applied and odds:
+        _providers.append(odds["provider"])
+    if poly_match:
+        _providers.append("Polymarket")
+    _blend_note = (f" &nbsp;·&nbsp; blend {int((1-mkt_weight)*100)}/{int(mkt_weight*100)} "
+                   f"(model/market)" if blend_applied and odds else "")
     st.markdown(
-        f"<div class='sh'>Model vs Betting Market &nbsp;·&nbsp; "
-        f"{odds['provider']} &nbsp;·&nbsp; "
-        f"blend {int((1-mkt_weight)*100)}/{int(mkt_weight*100)} "
-        f"(model/market)</div>",
+        f"<div class='sh'>Model vs Market &nbsp;·&nbsp; "
+        f"{' + '.join(_providers)}{_blend_note}</div>",
         unsafe_allow_html=True,
     )
 
@@ -1315,44 +1328,65 @@ if blend_applied and odds:
         "<th style='padding:6px 8px;color:rgba(255,255,255,0.40);font-size:0.7rem;'>λ (xG)</th>"
         "</tr></thead><tbody>"
     )
-    # Model row
+    # Model row (always)
     table += _row("📊 Model",
                   model_res["prob_home_win"], model_res["prob_draw"], model_res["prob_away_win"],
                   model_lh, model_la, "rgba(255,255,255,0.75)")
-    # Market row
-    table += _row("💰 Market",
-                  odds["market_prob_home"], odds["market_prob_draw"], odds["market_prob_away"],
-                  odds["market_lambda_home"], odds["market_lambda_away"], "rgba(251,191,36,0.85)")
-    # Blended (final) row — highlighted
-    table += (
-        "<tr style='background:rgba(99,102,241,0.10);"
-        "border-top:1px solid rgba(99,102,241,0.25);'>"
-        f"<td style='font-weight:700;color:rgba(167,139,250,0.95);padding:6px 8px;'>✨ Blended</td>"
-        f"<td style='text-align:center;font-weight:700;'>{res['prob_home_win']*100:.1f}%</td>"
-        f"<td style='text-align:center;font-weight:700;'>{res['prob_draw']*100:.1f}%</td>"
-        f"<td style='text-align:center;font-weight:700;'>{res['prob_away_win']*100:.1f}%</td>"
-        f"<td style='text-align:center;color:rgba(255,255,255,0.55);'>{final_lh:.2f} – {final_la:.2f}</td>"
-        "</tr>"
-    )
+    # DraftKings market row (when available)
+    if blend_applied and odds:
+        table += _row(f"💰 {odds['provider']}",
+                      odds["market_prob_home"], odds["market_prob_draw"], odds["market_prob_away"],
+                      odds["market_lambda_home"], odds["market_lambda_away"], "rgba(251,191,36,0.85)")
+    # Polymarket per-match row (when a market exists for this fixture)
+    if poly_match:
+        table += _row("🔮 Polymarket",
+                      poly_match["market_prob_home"], poly_match["market_prob_draw"],
+                      poly_match["market_prob_away"], poly_match["market_lambda_home"],
+                      poly_match["market_lambda_away"], "rgba(94,234,212,0.90)")
+    # Blended (final) row — only when DraftKings is blended into the prediction
+    if blend_applied and odds:
+        table += (
+            "<tr style='background:rgba(99,102,241,0.10);"
+            "border-top:1px solid rgba(99,102,241,0.25);'>"
+            f"<td style='font-weight:700;color:rgba(167,139,250,0.95);padding:6px 8px;'>✨ Blended</td>"
+            f"<td style='text-align:center;font-weight:700;'>{res['prob_home_win']*100:.1f}%</td>"
+            f"<td style='text-align:center;font-weight:700;'>{res['prob_draw']*100:.1f}%</td>"
+            f"<td style='text-align:center;font-weight:700;'>{res['prob_away_win']*100:.1f}%</td>"
+            f"<td style='text-align:center;color:rgba(255,255,255,0.55);'>{final_lh:.2f} – {final_la:.2f}</td>"
+            "</tr>"
+        )
     table += "</tbody></table>"
 
-    ou = (f" &nbsp;·&nbsp; O/U {odds['over_under']} "
-          f"(market total {odds['market_total_goals']})"
-          if odds.get("over_under") else "")
-    ml = (f"Moneylines: {home} {odds['moneyline_home']:+g} · "
-          f"Draw {odds['moneyline_draw']:+g} · {away} {odds['moneyline_away']:+g}{ou}")
+    caps = []
+    if blend_applied and odds:
+        ou = (f" &nbsp;·&nbsp; O/U {odds['over_under']} "
+              f"(market total {odds['market_total_goals']})"
+              if odds.get("over_under") else "")
+        caps.append(f"Moneylines: {home} {odds['moneyline_home']:+g} · "
+                    f"Draw {odds['moneyline_draw']:+g} · {away} {odds['moneyline_away']:+g}{ou}")
+    if poly_match:
+        caps.append(
+            f"🔮 Polymarket match market <code>{poly_match['event_slug']}</code> "
+            f"&nbsp;·&nbsp; overround {poly_match['overround']:.2f} "
+            f"(shown for reference — not blended into the prediction)")
+    cap_html = "<br>".join(caps)
 
     st.markdown(
         f"<div class='metric-card' style='padding:14px 18px;text-align:left;'>"
         f"{table}"
-        f"<p style='margin:10px 0 0;font-size:0.72rem;color:rgba(255,255,255,0.35);'>{ml}</p>"
+        f"<p style='margin:10px 0 0;font-size:0.72rem;color:rgba(255,255,255,0.35);'>{cap_html}</p>"
         f"</div>",
         unsafe_allow_html=True,
     )
-elif use_market and not odds:
-    st.info("💰 No betting market available for this matchup "
+
+if use_market and not odds:
+    st.info("💰 No DraftKings market for this matchup "
             "(odds are only published for scheduled WC 2026 fixtures). "
             "Showing pure statistical model.")
+if use_market and not poly_match:
+    st.caption("🔮 No Polymarket match market for this fixture. Polymarket lists per-match "
+               "markets selectively (mainly marquee games); its tournament-winner odds are "
+               "shown below.")
 
 # ── Polymarket WC 2026 winner odds ────────────────────────────────────────────
 _poly_all = get_polymarket_odds_cached()

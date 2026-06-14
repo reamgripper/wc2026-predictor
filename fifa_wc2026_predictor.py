@@ -44,6 +44,7 @@ variance in their true λ estimate, so the CI expands accordingly.
 
 import io
 import json
+import re
 import time
 import warnings
 from datetime import datetime, timezone
@@ -1860,6 +1861,143 @@ def fetch_polymarket_team_odds(team: str) -> Optional[float]:
         if tl in poly_team.lower() or poly_team.lower() in tl:
             return prob
     return None
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# MODULE 2.7: POLYMARKET PER-MATCH ODDS (optional, discovered dynamically)
+# ─────────────────────────────────────────────────────────────────────────────
+# Polymarket lists individual soccer matches as an *event* containing three
+# binary markets:
+#       "Will {A} beat {B}?"            → Yes price ≈ P(A wins)
+#       "Will {B} beat {A}?"            → Yes price ≈ P(B wins)
+#       "Will {A} vs. {B} end in a draw?" → Yes price ≈ P(draw)
+# We discover the event by team name (no URLs to pre-load), de-vig the three Yes
+# prices, and invert them to a λ pair through the same Skellam machinery used for
+# DraftKings. Match markets are created selectively, so this returns None for any
+# fixture Polymarket has not listed (the common case for minor group games).
+# ─────────────────────────────────────────────────────────────────────────────
+
+_POLY_SEARCH_URL = "https://gamma-api.polymarket.com/public-search?q={q}&limit_per_type=20"
+_POLY_EVENT_URL  = "https://gamma-api.polymarket.com/events?slug={slug}"
+_POLY_MATCH_CACHE: Dict[frozenset, Any] = {}
+_POLY_MATCH_TTL: float = 300.0               # 5-minute cache per fixture
+
+# Predictor name → alternative spelling that may appear in Polymarket titles.
+_POLY_MATCH_ALIASES: Dict[str, str] = {
+    "USA": "United States", "United States": "USA",
+    "South Korea": "Korea Republic", "Ivory Coast": "Cote d'Ivoire",
+    "Netherlands": "Holland",
+}
+
+
+def _poly_norm(s: str) -> str:
+    return re.sub(r"[^a-z0-9]", "", (s or "").lower())
+
+
+def _poly_name_in(team: str, text: str) -> bool:
+    """True if `team` (or a known alias) appears in `text`, ignoring punctuation."""
+    txt = _poly_norm(text)
+    t = _poly_norm(team)
+    if t and t in txt:
+        return True
+    alias = _POLY_MATCH_ALIASES.get(team)
+    return bool(alias and _poly_norm(alias) in txt)
+
+
+def _poly_yes_price(market: Dict) -> Optional[float]:
+    """Pull the 'Yes' outcome price out of a binary Polymarket market."""
+    try:
+        outs = market.get("outcomes", "[]")
+        prs  = market.get("outcomePrices", "[]")
+        outs = json.loads(outs) if isinstance(outs, str) else outs
+        prices = json.loads(prs) if isinstance(prs, str) else prs
+        return float(prices[outs.index("Yes")])
+    except Exception:
+        return None
+
+
+def _poly_find_match_event(home: str, away: str):
+    """Search Polymarket for an open soccer event between `home` and `away`.
+
+    Returns (event_dict, markets_list) or (None, None).
+    """
+    queries = [f"{home} vs {away}", f"{away} vs {home}", f"{home} {away}"]
+    for q in queries:
+        try:
+            r = _get(_POLY_SEARCH_URL.format(q=requests.utils.quote(q)))
+            events = (r.json() or {}).get("events", [])
+        except Exception:
+            continue
+        for e in events:
+            title = e.get("title", "")
+            if "vs" not in title.lower():
+                continue
+            if not (_poly_name_in(home, title) and _poly_name_in(away, title)):
+                continue
+            if e.get("closed"):                 # skip resolved matches
+                continue
+            markets = e.get("markets")
+            if not markets and e.get("slug"):
+                try:
+                    fev = _get(_POLY_EVENT_URL.format(slug=e["slug"])).json()
+                    markets = fev[0].get("markets") if fev else None
+                except Exception:
+                    markets = None
+            if markets:
+                return e, markets
+    return None, None
+
+
+def fetch_polymarket_match_odds(home: str, away: str) -> Optional[Dict]:
+    """
+    Discover and return Polymarket's per-match odds for `home` vs `away`.
+
+    Returns a dict shaped like fetch_match_odds() (de-vigged W/D/L probabilities
+    plus a market-implied λ pair, oriented to the caller's home/away), or None
+    if Polymarket has no open market for this fixture.
+    """
+    key = frozenset((home, away))
+    now = time.time()
+    cached = _POLY_MATCH_CACHE.get(key)
+    if cached and (now - cached[0]) < _POLY_MATCH_TTL:
+        return cached[1]
+
+    result: Optional[Dict] = None
+    ev, markets = _poly_find_match_event(home, away)
+    if markets:
+        p_home = p_away = p_draw = None
+        for m in markets:
+            ql = (m.get("question") or "").lower()
+            yes = _poly_yes_price(m)
+            if yes is None:
+                continue
+            if "draw" in ql:
+                p_draw = yes
+            elif "beat" in ql:
+                winner_side = ql.split("beat")[0]        # "will {winner} "
+                if _poly_name_in(home, winner_side):
+                    p_home = yes
+                elif _poly_name_in(away, winner_side):
+                    p_away = yes
+        if None not in (p_home, p_draw, p_away):
+            s = p_home + p_draw + p_away
+            # Reject resolved/degenerate markets (prices collapse to 0/1).
+            if s > 0 and max(p_home, p_draw, p_away) < 0.999:
+                fair_h, fair_d, fair_a = p_home / s, p_draw / s, p_away / s
+                lam_h, lam_a = market_implied_lambdas(fair_h, fair_d, fair_a, None)
+                result = {
+                    "provider":          "Polymarket",
+                    "event_slug":        ev.get("slug"),
+                    "market_prob_home":  round(fair_h, 4),
+                    "market_prob_draw":  round(fair_d, 4),
+                    "market_prob_away":  round(fair_a, 4),
+                    "market_lambda_home": round(lam_h, 3),
+                    "market_lambda_away": round(lam_a, 3),
+                    "overround":         round(s, 4),     # >1 = bookmaker margin
+                }
+
+    _POLY_MATCH_CACHE[key] = (now, result)
+    return result
 
 
 def blend_lambdas(
