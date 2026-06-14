@@ -76,8 +76,8 @@ blockquote { border-left: 3px solid rgba(99,102,241,0.5); margin: 8px 0; padding
 </style>
 """, unsafe_allow_html=True)
 
-from auth import require_login
-require_login()
+from auth import require_access
+require_access("visitor")
 
 _ROOT = Path(__file__).resolve().parent.parent
 _MD = _ROOT / "about_me.md"

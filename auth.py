@@ -1,97 +1,152 @@
 """
-auth.py — username/password gate for the WC 2026 simulator.
+auth.py — access gate for the WC 2026 Predictor.
 
-Users are read from ``st.secrets["auth"]`` (never committed). If no ``[auth]``
-section is present — e.g. running locally without a secrets file — the app runs
-OPEN so local development is never blocked.
+Two access levels, chosen on a single password page:
 
-Call ``require_login()`` near the top of every page (after ``st.set_page_config``
-and after the page's own CSS, so the login form inherits the styling).
+  • admin    — full access to every page and every control.
+               Requires the admin password.
+  • visitor  — read-only. May view the main predictor (WC2026 UI) and the
+               About Me page, but NOT Model Details or Expert Analysis, and
+               admin-only controls are hidden.
 
-To create accounts, run locally::
-
-    python make_users.py
-
-and paste the printed block into ``.streamlit/secrets.toml`` (local) or the
-Streamlit Community Cloud "Secrets" editor (deployment).
+The admin password is checked against a SHA-256 hash so the plaintext is not
+stored in this (public) repo. To change it, set `admin_password` in
+st.secrets — that takes precedence over the built-in hash.
 """
 from __future__ import annotations
 
+import hashlib
+
 import streamlit as st
 
+_ACCESS = "access_level"                  # session_state: None | "admin" | "visitor"
 
-def _credentials_from_secrets():
-    """Return (credentials_dict, auth_section) or None if auth isn't configured."""
+# sha256("@dm!nis-traitor") — the default admin password, stored hashed.
+_ADMIN_HASH = "405633ea226b6c859d8b1d163f2505bd2dd570825671e6f49f09cdd843c4ac1c"
+
+
+def _password_ok(pw: str) -> bool:
+    if not pw:
+        return False
     try:
-        has_auth = "auth" in st.secrets
+        secret = st.secrets.get("admin_password")
     except Exception:
-        # No secrets.toml at all (local dev) -> run open.
-        return None
-    if not has_auth:
-        return None
-
-    auth = st.secrets["auth"]
-    users = auth.get("credentials", {}).get("usernames", {})
-    creds = {"usernames": {}}
-    for username, info in users.items():
-        creds["usernames"][str(username)] = {
-            "name": info.get("name", str(username)),
-            "email": info.get("email", ""),
-            "password": info["password"],          # pre-hashed (bcrypt)
-        }
-    if not creds["usernames"]:
-        return None
-    return creds, auth
+        secret = None
+    if secret:
+        return pw == secret
+    return hashlib.sha256(pw.encode("utf-8")).hexdigest() == _ADMIN_HASH
 
 
-def require_login():
-    """
-    Render the login gate. Returns the signed-in username, or None when auth is
-    not configured (open access). Halts the script via ``st.stop()`` until the
-    visitor is authenticated.
-    """
-    bundle = _credentials_from_secrets()
-    if bundle is None:
-        return None                                # open access (no [auth] secret)
+def current_access():
+    """Return the current access level, or None if not chosen yet."""
+    return st.session_state.get(_ACCESS)
 
-    try:
-        import streamlit_authenticator as stauth
-    except ModuleNotFoundError:
-        st.warning("Login is configured but `streamlit-authenticator` is not "
-                   "installed — running without authentication.")
-        return None
 
-    creds, auth = bundle
-    authenticator = stauth.Authenticate(
-        creds,
-        auth.get("cookie_name", "wc2026_auth"),
-        auth["cookie_key"],
-        int(auth.get("cookie_expiry_days", 7)),
-        auto_hash=False,                           # passwords are already hashed
+def _gate_styles():
+    st.markdown("""
+    <style>
+    .gate-wrap { max-width: 460px; margin: 7vh auto 0; text-align: center; }
+    .gate-title { font-size: 2.1rem; font-weight: 700; letter-spacing: -0.03em;
+        color: rgba(255,255,255,0.96); margin-bottom: 4px; }
+    .gate-sub { font-size: 0.92rem; color: rgba(255,255,255,0.45); margin-bottom: 26px; }
+    </style>
+    """, unsafe_allow_html=True)
+
+
+def _login_panel(key_prefix: str = "gate"):
+    """Render the password / skip page. Sets access on submit and reruns."""
+    _gate_styles()
+    st.markdown(
+        "<div class='gate-wrap'>"
+        "<div class='gate-title'>⚽ WC 2026 Predictor</div>"
+        "<div class='gate-sub'>Enter the admin password for full access, "
+        "or continue as a visitor (read-only).</div></div>",
+        unsafe_allow_html=True,
     )
+    _, mid, _ = st.columns([1, 2, 1])
+    with mid:
+        pw = st.text_input("Admin password", type="password",
+                           key=f"{key_prefix}_pw", placeholder="••••••••")
+        c1, c2 = st.columns(2)
+        with c1:
+            enter = st.button("Enter", type="primary", use_container_width=True,
+                              key=f"{key_prefix}_enter")
+        with c2:
+            skip = st.button("Continue as visitor", use_container_width=True,
+                             key=f"{key_prefix}_skip")
+        if enter:
+            if _password_ok(pw):
+                st.session_state[_ACCESS] = "admin"
+                st.rerun()
+            else:
+                st.error("Incorrect password.")
+        if skip:
+            st.session_state[_ACCESS] = "visitor"
+            st.rerun()
 
-    authenticator.login(
-        location="main",
-        fields={"Form name": "Sign in to the WC 2026 Simulator"},
+
+def _admin_required_panel():
+    """Shown when a visitor opens an admin-only page; offers to unlock."""
+    _gate_styles()
+    st.markdown(
+        "<div class='gate-wrap'>"
+        "<div class='gate-title'>🔒 Admins only</div>"
+        "<div class='gate-sub'>This page requires the admin password. "
+        "Enter it to unlock, or go back to the main predictor.</div></div>",
+        unsafe_allow_html=True,
     )
-    status = st.session_state.get("authentication_status")
+    _, mid, _ = st.columns([1, 2, 1])
+    with mid:
+        pw = st.text_input("Admin password", type="password", key="gate_upgrade_pw",
+                           placeholder="••••••••")
+        if st.button("Unlock", type="primary", use_container_width=True,
+                     key="gate_upgrade_btn"):
+            if _password_ok(pw):
+                st.session_state[_ACCESS] = "admin"
+                st.rerun()
+            else:
+                st.error("Incorrect password.")
 
-    if status is False:
-        st.error("Incorrect username or password.")
-        st.stop()
-    if status is None:
-        st.info("Please sign in to run simulations.")
-        st.stop()
 
-    # Authenticated — show who, and a logout control in the sidebar.
+def _sidebar_badge(level: str):
     with st.sidebar:
-        st.markdown(
-            f"<div style='font-size:0.8rem;color:rgba(255,255,255,0.5);"
-            f"margin-bottom:6px;'>Signed in as "
-            f"<b style='color:rgba(255,255,255,0.85)'>"
-            f"{st.session_state.get('name')}</b></div>",
-            unsafe_allow_html=True,
-        )
-        authenticator.logout("Log out", "sidebar")
+        if level == "admin":
+            st.markdown(
+                "<div style='font-size:0.78rem;color:rgba(134,239,172,0.85);"
+                "margin-bottom:6px;'>🔓 Admin access</div>",
+                unsafe_allow_html=True)
+        else:
+            st.markdown(
+                "<div style='font-size:0.78rem;color:rgba(255,255,255,0.5);"
+                "margin-bottom:6px;'>👁 Read-only visitor</div>",
+                unsafe_allow_html=True)
+        if st.button("Log out", key="gate_logout", use_container_width=True):
+            st.session_state.pop(_ACCESS, None)
+            st.rerun()
 
-    return st.session_state.get("username")
+
+def require_access(required: str = "visitor") -> str:
+    """
+    Ensure the visitor has at least `required` access ("visitor" or "admin").
+
+    Renders the password page (or an admin-unlock prompt) and st.stop()s until
+    the requirement is met. Returns the granted level ("admin" or "visitor").
+    """
+    level = st.session_state.get(_ACCESS)
+
+    if level is None:                      # first visit — choose access
+        _login_panel()
+        st.stop()
+
+    if required == "admin" and level != "admin":
+        _sidebar_badge(level)
+        _admin_required_panel()
+        st.stop()
+
+    _sidebar_badge(level)
+    return level
+
+
+# Backwards-compatible alias (old call sites used require_login()).
+def require_login():
+    return require_access("visitor")

@@ -124,8 +124,8 @@ hr { border-color: rgba(255,255,255,0.08) !important; margin: 28px 0 !important;
 import sys
 from pathlib import Path as _Path
 sys.path.insert(0, str(_Path(__file__).resolve().parent.parent))
-from auth import require_login
-require_login()
+from auth import require_access
+require_access("admin")
 
 
 # ─────────────────────────────────────────────────────────────────────────────

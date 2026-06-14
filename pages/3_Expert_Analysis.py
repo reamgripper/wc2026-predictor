@@ -143,8 +143,8 @@ pre { background: rgba(0,0,0,0.35) !important; border-radius: 10px !important; f
 """, unsafe_allow_html=True)
 
 # ── Authentication gate ───────────────────────────────────────────────────────
-from auth import require_login
-require_login()
+from auth import require_access
+require_access("admin")
 
 # ── Session-state helpers ─────────────────────────────────────────────────────
 

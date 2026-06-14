@@ -7,9 +7,7 @@ statsmodels>=0.14
 plotly>=5.20
 requests>=2.31
 pyarrow>=14.0            # parquet cache read/write
-
-# ── Authentication (username/password login) ──────────────────────────────────
-streamlit-authenticator==0.4.2   # pulls in bcrypt, extra-streamlit-components, PyJWT
+# Auth uses only the Python stdlib (hashlib) — see auth.py. No extra package.
 
 # ── LLM client (lazy; harmless if unused) ─────────────────────────────────────
 openai>=1.40

@@ -501,9 +501,10 @@ div[role="dialog"] label, div[role="dialog"] p, div[role="dialog"] span {
 </style>
 """, unsafe_allow_html=True)
 
-# ── Authentication gate (username/password via st.secrets; open if unset) ─────
-from auth import require_login
-require_login()
+# ── Access gate: admin (password) = full · visitor (skip) = read-only ─────────
+from auth import require_access
+access_level = require_access("visitor")
+is_admin = access_level == "admin"
 
 # ── Plotly dark glass theme ───────────────────────────────────────────────────
 PLOT_BG   = "rgba(0,0,0,0)"
@@ -1002,27 +1003,27 @@ with st.sidebar:
     n_sims  = st.slider("Monte Carlo draws", 1_000, 50_000, 10_000, step=1_000)
     run_btn = st.button("Run Simulation ›", use_container_width=True, type="primary")
 
-    # Refresh / rebuild buttons
-    st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
-    if st.button("🔄  Check for new results", use_container_width=True,
-                 help="Fetches any new WC 2026 results from ESPN and appends to local cache"):
-        st.cache_resource.clear()
-        st.cache_data.clear()
-        st.rerun()
-
+    # Refresh / rebuild buttons — admin only (they mutate the shared cache)
     from fifa_wc2026_predictor import HIST_PARQUET, CACHE_DIR
-    if st.button("🗑️  Rebuild full cache", use_container_width=True,
-                 help="Deletes historical parquet and re-downloads everything on next load"):
-        import shutil
-        if HIST_PARQUET.exists():
-            HIST_PARQUET.unlink()
-        st.cache_resource.clear()
-        st.cache_data.clear()
-        st.success("Cache cleared — reloading…")
-        st.rerun()
+    if is_admin:
+        st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
+        if st.button("🔄  Check for new results", use_container_width=True,
+                     help="Fetches any new WC 2026 results from ESPN and appends to local cache"):
+            st.cache_resource.clear()
+            st.cache_data.clear()
+            st.rerun()
 
-    # Kaggle setup hint shown only when cache is missing
-    if not HIST_PARQUET.exists():
+        if st.button("🗑️  Rebuild full cache", use_container_width=True,
+                     help="Deletes historical parquet and re-downloads everything on next load"):
+            if HIST_PARQUET.exists():
+                HIST_PARQUET.unlink()
+            st.cache_resource.clear()
+            st.cache_data.clear()
+            st.success("Cache cleared — reloading…")
+            st.rerun()
+
+    # Kaggle setup hint shown only when cache is missing (admin only)
+    if is_admin and not HIST_PARQUET.exists():
         st.info(
             "**First run:** for the full 47,000-match dataset, place the Kaggle CSV at:\n\n"
             f"`{CACHE_DIR}/results.csv`\n\n"
