@@ -1910,7 +1910,10 @@ _POLY_MATCH_ALIASES: Dict[str, str] = {
 
 
 def _poly_norm(s: str) -> str:
-    return re.sub(r"[^a-z0-9]", "", (s or "").lower())
+    # Fold accents first (ç→c, é→e, ã→a …) so "Curaçao" matches "Curacao".
+    import unicodedata
+    s = unicodedata.normalize("NFKD", s or "").encode("ascii", "ignore").decode()
+    return re.sub(r"[^a-z0-9]", "", s.lower())
 
 
 def _poly_name_in(team: str, text: str) -> bool:
@@ -1967,6 +1970,53 @@ def _poly_find_match_event(home: str, away: str):
     return None, None
 
 
+def _poly_odds_from_markets(markets, home: str, away: str,
+                            slug: Optional[str] = None) -> Optional[Dict]:
+    """
+    Turn a list of Polymarket binary markets (the three W/L/D questions for one
+    match) into the de-vigged probabilities + market-implied λ pair, oriented to
+    `home`/`away`. Returns None if the three questions can't be identified.
+    """
+    if not markets:
+        return None
+    p_home = p_away = p_draw = None
+    for m in markets:
+        ql = (m.get("question") or "").lower()
+        yes = _poly_yes_price(m)
+        if yes is None:
+            continue
+        if "draw" in ql:                                 # "... end in a draw?"
+            p_draw = yes
+            continue
+        if "beat" not in ql and "win" not in ql:
+            continue
+        # Two question shapes seen in the wild:
+        #   "Will {A} beat {B}?"        → winner is named before "beat"
+        #   "Will {A} win on {date}?"   → only the winner is named
+        side = ql.split("beat")[0] if "beat" in ql else ql
+        if _poly_name_in(home, side):
+            p_home = yes
+        elif _poly_name_in(away, side):
+            p_away = yes
+    if None in (p_home, p_draw, p_away):
+        return None
+    s = p_home + p_draw + p_away
+    if s <= 0 or max(p_home, p_draw, p_away) >= 0.999:    # resolved/degenerate
+        return None
+    fair_h, fair_d, fair_a = p_home / s, p_draw / s, p_away / s
+    lam_h, lam_a = market_implied_lambdas(fair_h, fair_d, fair_a, None)
+    return {
+        "provider":           "Polymarket",
+        "event_slug":         slug,
+        "market_prob_home":   round(fair_h, 4),
+        "market_prob_draw":   round(fair_d, 4),
+        "market_prob_away":   round(fair_a, 4),
+        "market_lambda_home": round(lam_h, 3),
+        "market_lambda_away": round(lam_a, 3),
+        "overround":          round(s, 4),                # >1 = bookmaker margin
+    }
+
+
 def fetch_polymarket_match_odds(home: str, away: str) -> Optional[Dict]:
     """
     Discover and return Polymarket's per-match odds for `home` vs `away`.
@@ -1981,42 +2031,60 @@ def fetch_polymarket_match_odds(home: str, away: str) -> Optional[Dict]:
     if cached and (now - cached[0]) < _POLY_MATCH_TTL:
         return cached[1]
 
-    result: Optional[Dict] = None
     ev, markets = _poly_find_match_event(home, away)
-    if markets:
-        p_home = p_away = p_draw = None
-        for m in markets:
-            ql = (m.get("question") or "").lower()
-            yes = _poly_yes_price(m)
-            if yes is None:
-                continue
-            if "draw" in ql:
-                p_draw = yes
-            elif "beat" in ql:
-                winner_side = ql.split("beat")[0]        # "will {winner} "
-                if _poly_name_in(home, winner_side):
-                    p_home = yes
-                elif _poly_name_in(away, winner_side):
-                    p_away = yes
-        if None not in (p_home, p_draw, p_away):
-            s = p_home + p_draw + p_away
-            # Reject resolved/degenerate markets (prices collapse to 0/1).
-            if s > 0 and max(p_home, p_draw, p_away) < 0.999:
-                fair_h, fair_d, fair_a = p_home / s, p_draw / s, p_away / s
-                lam_h, lam_a = market_implied_lambdas(fair_h, fair_d, fair_a, None)
-                result = {
-                    "provider":          "Polymarket",
-                    "event_slug":        ev.get("slug"),
-                    "market_prob_home":  round(fair_h, 4),
-                    "market_prob_draw":  round(fair_d, 4),
-                    "market_prob_away":  round(fair_a, 4),
-                    "market_lambda_home": round(lam_h, 3),
-                    "market_lambda_away": round(lam_a, 3),
-                    "overround":         round(s, 4),     # >1 = bookmaker margin
-                }
-
+    result = _poly_odds_from_markets(markets, home, away,
+                                     ev.get("slug") if ev else None)
     _POLY_MATCH_CACHE[key] = (now, result)
     return result
+
+
+def _poly_parse_url(url: str):
+    """Extract (event_slug, event_id) from a Polymarket / polym.trade URL."""
+    from urllib.parse import urlparse, parse_qs
+    try:
+        u = urlparse(url.strip())
+    except Exception:
+        return None, None
+    qs = parse_qs(u.query)
+    slug = (qs.get("eventSlug") or qs.get("slug") or [None])[0]
+    eid  = (qs.get("eventId") or qs.get("id") or [None])[0]
+    if not slug and u.path:                              # /event/<slug>[/...]
+        parts = [p for p in u.path.split("/") if p]
+        if "event" in parts and parts.index("event") + 1 < len(parts):
+            slug = parts[parts.index("event") + 1]
+        elif parts:
+            slug = parts[-1]
+    return slug, eid
+
+
+def fetch_polymarket_match_odds_from_url(url: str, home: str, away: str) -> Optional[Dict]:
+    """
+    Resolve per-match odds from a user-supplied Polymarket (or polym.trade) URL.
+
+    Returns the same dict as fetch_polymarket_match_odds(), or None if the URL
+    can't be resolved to a match market with the three W/L/D questions.
+    """
+    slug, eid = _poly_parse_url(url)
+    if not slug and not eid:
+        return None
+
+    markets = None
+    resolved_slug = slug
+    try:
+        if slug:
+            fev = _get(_POLY_EVENT_URL.format(slug=slug)).json()
+            if fev:
+                markets = fev[0].get("markets")
+                resolved_slug = fev[0].get("slug", slug)
+        if not markets and eid:
+            fev = _get(f"https://gamma-api.polymarket.com/events/{eid}").json()
+            ev = fev if isinstance(fev, dict) else (fev[0] if fev else {})
+            markets = ev.get("markets")
+            resolved_slug = ev.get("slug", slug)
+    except Exception:
+        return None
+
+    return _poly_odds_from_markets(markets, home, away, resolved_slug)
 
 
 def blend_lambdas(

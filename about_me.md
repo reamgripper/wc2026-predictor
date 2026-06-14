@@ -22,7 +22,8 @@ EMAIL: rsamrat@dontsp.am
 
  I am a supply chain professional and a self-proclaimed math geek. No, That doesn't mean I’m not a human computer who experiences numbers as colors (<a href="https://www.cell.com/trends/cognitive-sciences/abstract/S1364-6613(00)01571-0?_returnURL=https%3A%2F%2Flinkinghub.elsevier.com%2Fretrieve%2Fpii%2FS1364661300015710%3Fshowall%3Dtrue" target="_blank">Colour–Text Synaesthesia</a>). I’m just someone deeply passionate about the elegance of numbers—from high school algebra and classic algorithms to Hadamard gates and Tensor Products in Quantum computing.
 
-For a long time, there was just one catch: I used to hate writing code from scratch.
+ Modern mathematics has moved beyond pen and paper and almost all of the mathematicians that I have know are proficient in writing codes.
+For a long time, there was just one catch: I used to hate writing code from scratch. I could write the basic ones, but the moment it became complex, my codes returned nothing but errors.
 
 That hurdle completely vanished with the advent of Large Language Models. Now, before my software engineering friends get defensive, let me clarify: I am not suggesting I’m building full-stack applications or managing secure, stable enterprise deployments. That remains firmly in the domain of engineering experts. But we all have to accept the reality that "Intent driven Coding" is the future. I highly recommend watching this keynote by Andrew Ng on 
 <a href="https://www.youtube.com/watch?v=g8um2AEf5ZA" target="_blank">the future of software engineering</a>.

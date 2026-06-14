@@ -15,7 +15,7 @@ from fifa_wc2026_predictor import (
     fetch_match_odds, blend_lambdas,
     compute_team_form, tournament_form_lambda_adjustment,
     fetch_polymarket_wc_odds_all, fetch_polymarket_team_odds,
-    fetch_polymarket_match_odds,
+    fetch_polymarket_match_odds, fetch_polymarket_match_odds_from_url,
     _wc_stats_for,
     HIST_PARQUET, CACHE_DIR,
 )
@@ -581,6 +581,11 @@ def get_polymarket_match_cached(home, away):
     """Polymarket per-match odds for this fixture (cached 5 min). None if absent."""
     return fetch_polymarket_match_odds(home, away)
 
+@st.cache_data(ttl=300, show_spinner=False)
+def get_polymarket_match_by_url_cached(url, home, away):
+    """Polymarket per-match odds from a user-supplied URL (cached 5 min)."""
+    return fetch_polymarket_match_odds_from_url(url, home, away)
+
 # ── MC helper ─────────────────────────────────────────────────────────────────
 def _mc(lh, la, hu, au, n, seed=42):
     rng = np.random.default_rng(seed)
@@ -986,6 +991,14 @@ with st.sidebar:
              "0.5 = equal blend",
         disabled=not use_market,
     )
+    poly_match_url = st.text_input(
+        "Polymarket match URL (optional)",
+        key="poly_match_url",
+        placeholder="https://polymarket.com/event/…",
+        help="Paste the Polymarket page for this exact match to force its odds "
+             "if auto-detection misses it. Leave blank to auto-detect.",
+        disabled=not use_market,
+    )
     n_sims  = st.slider("Monte Carlo draws", 1_000, 50_000, 10_000, step=1_000)
     run_btn = st.button("Run Simulation ›", use_container_width=True, type="primary")
 
@@ -1288,7 +1301,15 @@ for col, val, lbl, color in cards:
 st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
 
 # ── Model vs Market vs Blended comparison ─────────────────────────────────────
-poly_match = get_polymarket_match_cached(home, away) if use_market else None
+_poly_url = (st.session_state.get("poly_match_url") or "").strip()
+poly_match = None
+poly_url_failed = False
+if use_market:
+    if _poly_url:
+        poly_match = get_polymarket_match_by_url_cached(_poly_url, home, away)
+        poly_url_failed = poly_match is None
+    else:
+        poly_match = get_polymarket_match_cached(home, away)
 
 if (blend_applied and odds) or poly_match:
     st.divider()
@@ -1384,9 +1405,14 @@ if use_market and not odds:
             "(odds are only published for scheduled WC 2026 fixtures). "
             "Showing pure statistical model.")
 if use_market and not poly_match:
-    st.caption("🔮 No Polymarket match market for this fixture. Polymarket lists per-match "
-               "markets selectively (mainly marquee games); its tournament-winner odds are "
-               "shown below.")
+    if poly_url_failed:
+        st.warning("🔮 Couldn't read a match market from that Polymarket URL. Make sure it's "
+                   "the page for **this exact fixture** (a `…/event/…` link with the two "
+                   "teams), then try again — or clear the field to auto-detect.")
+    else:
+        st.caption("🔮 No Polymarket match market auto-detected for this fixture. If you know "
+                   "there is one, paste its URL in the sidebar (**Polymarket match URL**). "
+                   "Polymarket's tournament-winner odds are shown below.")
 
 # ── Polymarket WC 2026 winner odds ────────────────────────────────────────────
 _poly_all = get_polymarket_odds_cached()
