@@ -106,22 +106,17 @@ hr { border-color: rgba(255,255,255,0.08) !important; margin: 28px 0 !important;
 [data-testid="stToolbar"] { background: transparent !important; }
 [data-testid="stDialog"] > div, div[role="dialog"] {
   background: #16161f !important; color: rgba(255,255,255,0.90) !important; }
-/* Sidebar collapse control: kill Material Symbols ligature ghost, draw chevron */
+/* Sidebar expand/collapse controls -> replace ghosting Material icon with a hamburger */
 [data-testid="stSidebarCollapseButton"],
-[data-testid="stSidebarCollapsedControl"],
-[data-testid="collapsedControl"] { position: relative !important; }
+[data-testid="stExpandSidebarButton"] { position: relative !important; }
 [data-testid="stSidebarCollapseButton"] *,
-[data-testid="stSidebarCollapsedControl"] *,
-[data-testid="collapsedControl"] * { font-size: 0 !important; }
-[data-testid="stSidebarCollapseButton"]::after { content: "\2039"; }
-[data-testid="stSidebarCollapsedControl"]::after,
-[data-testid="collapsedControl"]::after { content: "\203A"; }
+[data-testid="stExpandSidebarButton"] * { font-size: 0 !important; }
 [data-testid="stSidebarCollapseButton"]::after,
-[data-testid="stSidebarCollapsedControl"]::after,
-[data-testid="collapsedControl"]::after {
-  position: absolute; inset: 0; display: flex; align-items: center;
-  justify-content: center; font-size: 1.15rem !important; line-height: 1;
-  color: rgba(255,255,255,0.55); pointer-events: none; }
+[data-testid="stExpandSidebarButton"]::after {
+  content: "\2630"; position: absolute; inset: 0; display: flex;
+  align-items: center; justify-content: center;
+  font-size: 1.1rem !important; line-height: 1;
+  color: rgba(255,255,255,0.6); pointer-events: none; }
 </style>
 """, unsafe_allow_html=True)
 

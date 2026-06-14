@@ -483,24 +483,20 @@ hr { border-color: rgba(255,255,255,0.07) !important; margin: 16px 0 !important;
 div[role="dialog"] label, div[role="dialog"] p, div[role="dialog"] span {
   color: rgba(255,255,255,0.85) !important; }
 
-/* ── Sidebar collapse control: kill the Material Symbols ligature ghost
-     ("keyboard_double_arrow_left" → shows as raw "keyb" when the icon font
-     fails) and draw our own chevron, same approach as the expander fix. ── */
+/* ── Sidebar expand/collapse controls (Streamlit 1.50: stSidebarCollapseButton
+     when open, stExpandSidebarButton when collapsed). Their Material Symbols
+     icon ghosts as raw "keyboard_double_arrow_*" text when the font fails, so
+     replace both with a simple hamburger menu icon. ── */
 [data-testid="stSidebarCollapseButton"],
-[data-testid="stSidebarCollapsedControl"],
-[data-testid="collapsedControl"] { position: relative !important; }
+[data-testid="stExpandSidebarButton"] { position: relative !important; }
 [data-testid="stSidebarCollapseButton"] *,
-[data-testid="stSidebarCollapsedControl"] *,
-[data-testid="collapsedControl"] * { font-size: 0 !important; }
-[data-testid="stSidebarCollapseButton"]::after { content: "‹"; }
-[data-testid="stSidebarCollapsedControl"]::after,
-[data-testid="collapsedControl"]::after { content: "›"; }
+[data-testid="stExpandSidebarButton"] * { font-size: 0 !important; }
 [data-testid="stSidebarCollapseButton"]::after,
-[data-testid="stSidebarCollapsedControl"]::after,
-[data-testid="collapsedControl"]::after {
-  position: absolute; inset: 0; display: flex; align-items: center;
-  justify-content: center; font-size: 1.15rem !important; line-height: 1;
-  color: rgba(255,255,255,0.55); pointer-events: none; }
+[data-testid="stExpandSidebarButton"]::after {
+  content: "\2630"; position: absolute; inset: 0; display: flex;
+  align-items: center; justify-content: center;
+  font-size: 1.1rem !important; line-height: 1;
+  color: rgba(255,255,255,0.6); pointer-events: none; }
 </style>
 """, unsafe_allow_html=True)
 
