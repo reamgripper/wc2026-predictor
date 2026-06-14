@@ -135,7 +135,7 @@ pre { background: rgba(0,0,0,0.35) !important; border-radius: 10px !important; f
 [data-testid="stExpandSidebarButton"] * { font-size: 0 !important; }
 [data-testid="stSidebarCollapseButton"]::after,
 [data-testid="stExpandSidebarButton"]::after {
-  content: "\2630"; position: absolute; inset: 0; display: flex;
+  content: "☰"; position: absolute; inset: 0; display: flex;
   align-items: center; justify-content: center;
   font-size: 1.1rem !important; line-height: 1;
   color: rgba(255,255,255,0.6); pointer-events: none; }
