@@ -22,8 +22,8 @@ import streamlit as st
 
 _ACCESS = "access_level"                  # session_state: "admin" | "visitor" | unset
 
-# sha256("@dm!nis-traitor") — the default admin password, stored hashed.
-_ADMIN_HASH = "405633ea226b6c859d8b1d163f2505bd2dd570825671e6f49f09cdd843c4ac1c"
+# sha256 of the admin password, stored hashed so the plaintext isn't in the repo.
+_ADMIN_HASH = "239dfd82b58ebf034615ae16ace8886f5d6637105d98194746ba653167604b84"
 
 
 def _password_ok(pw: str) -> bool:
