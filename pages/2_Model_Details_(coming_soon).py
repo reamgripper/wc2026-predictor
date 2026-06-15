@@ -117,6 +117,20 @@ hr { border-color: rgba(255,255,255,0.08) !important; margin: 28px 0 !important;
   align-items: center; justify-content: center;
   font-size: 1.1rem !important; line-height: 1;
   color: rgba(255,255,255,0.6); pointer-events: none; }
+/* Expander: kill the "keyboard_arrow_right" Material ligature ghost, draw own chevron */
+.stExpander details > summary,
+.stExpander details > summary * { font-size: 0 !important; line-height: 0 !important; }
+.stExpander details > summary p {
+  font-size: 0.9rem !important; line-height: 1.4 !important; font-weight: 600 !important;
+  color: rgba(255,255,255,0.8) !important; }
+.stExpander details > summary {
+  display: flex !important; align-items: center !important; gap: 8px !important;
+  padding: 12px 16px !important; cursor: pointer !important; }
+.stExpander details > summary::before {
+  content: "›"; font-size: 1rem !important; line-height: 1 !important; font-weight: 400;
+  color: rgba(255,255,255,0.35); flex-shrink: 0; display: inline-block;
+  transition: transform 0.18s ease; }
+.stExpander details[open] > summary::before { transform: rotate(90deg); }
 </style>
 """, unsafe_allow_html=True)
 

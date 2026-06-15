@@ -412,6 +412,66 @@ Var[D] = 2.7, SD = 1.64
 
 ;; ---------------------------------------------------------------------------
 @@CARD@@
+@@BADGE: Worked example@@
+### The whole pipeline on one match: Germany vs Curacao (14 June 2026)
+
+Let me run a real fixture through every step above. Germany are a heavyweight; Curacao were World Cup debutants, so this is a lopsided game -- which makes each stage easy to see.
+
+#### 1. Inputs
+Germany carry an **ELO of 1939**. Curacao have no ELO rating at all (a debutant with almost no elite-match history), so the model falls back to the **rating floor** -- already a strong signal that this is a mismatch. The match is at a **neutral venue** (all WC 2026 group games are), so the host-advantage term is off and I use the neutral-venue symmetry fix from Step 3.
+
+#### 2. The GLM turns features into expected goals (Step 3)
+Feeding Germany's form, ELO and World Cup heritage into the Poisson GLM, and Curacao's into the away model, gives:
+
+@@LATEX@@
+\lambda_{\text{Germany}} = 2.30 \qquad \lambda_{\text{Curacao}} = 0.78
+@@END@@
+
+So the model expects Germany to score about 2.3 goals and Curacao about 0.8.
+
+#### 3. Convert lambda to win / draw / loss (Steps 3-4)
+Running those two lambdas through the Poisson PMF with the Dixon-Coles low-score correction (Step 4) gives the **pure-model** outcome split:
+
+| Source | Germany win | Draw | Curacao win | lambda (Ger - Cur) |
+|---|---|---|---|---|
+| **Model** | 70.8% | 19.0% | 10.2% | 2.30 - 0.78 |
+
+The model is confident but, on its own, still gives Curacao a 10% upset chance -- it has never seen Curacao play elite opposition, so it hedges.
+
+#### 4. Fold in the market (Step 7-8)
+Polymarket priced Germany at roughly **94% to win the match**. De-vigging its three Yes prices and inverting them to goals (Step 7) gives a much sharper market view:
+
+| Source | Germany win | Draw | Curacao win | lambda (Ger - Cur) |
+|---|---|---|---|---|
+| **Market (Polymarket)** | 91.2% | 8.4% | 0.4% | 2.63 - 0.08 |
+
+The crowd is far more certain Curacao won't score.
+
+#### 5. Geometric blend (Step 7, w = 0.5)
+With the market slider at the default 0.5, I blend the two lambda pairs geometrically:
+
+@@LATEX@@
+\lambda_{\text{blend}} = \lambda_{\text{model}}^{0.5} \times \lambda_{\text{market}}^{0.5}
+= \begin{cases} \sqrt{2.30 \times 2.63} = 2.46 & \text{(Germany)} \\ \sqrt{0.78 \times 0.08} = 0.24 & \text{(Curacao)} \end{cases}
+@@END@@
+
+| Source | Germany win | Draw | Curacao win | lambda (Ger - Cur) |
+|---|---|---|---|---|
+| **Blended** | 85.8% | 12.2% | 2.0% | 2.46 - 0.24 |
+
+The blend sits between the cautious model and the sharp market -- pulling Curacao's chances down from 10% to 2%, but not all the way to the market's 0.4%.
+
+#### 6. Simulate and read off the answer (Steps 9-10)
+Ten thousand Monte Carlo draws from Poisson(2.46) and Poisson(0.24), reweighted by Dixon-Coles, produce the final numbers shown on the main page:
+
+@@NOTE:green@@
+**Final prediction:** Germany win **85.8%** / draw **12.2%** / Curacao win **2.0%**. Most likely scoreline **Germany 2 - 0 Curacao**. Expected goal difference about **+2.2**, with a Skellam 95% margin of error of roughly +/- 3 goals -- wide, because even a near-certain winner can run up an unpredictable scoreline.
+@@END@@
+
+That is the entire flow: **features -> GLM lambda -> Dixon-Coles W/D/L -> market blend -> Monte Carlo -> the percentages and scoreline you see.**
+
+;; ---------------------------------------------------------------------------
+@@CARD@@
 @@BADGE: Step 11@@
 ### How to read every number on the main page
 
