@@ -1849,7 +1849,9 @@ with sp2:
 
 sb1, sb2, sb3 = st.columns([2, 2, 3])
 with sb1:
-    if st.button("💾 Save prediction", use_container_width=True, type="primary"):
+    if st.button("💾 Save prediction", use_container_width=True, type="primary",
+                 disabled=not is_admin,
+                 help=None if is_admin else "Unlock full access to save predictions"):
         save_prediction(_pred_key, {
             "date":           str(_match_date),
             "home":           home,
@@ -1867,11 +1869,17 @@ with sb1:
         st.success("Saved to schedule ✓")
         st.rerun()
 with sb2:
-    if _saved and st.button("🗑️ Remove", use_container_width=True):
+    if _saved and st.button("🗑️ Remove", use_container_width=True, disabled=not is_admin):
         delete_prediction(_pred_key)
         st.rerun()
 with sb3:
-    if _saved:
+    if not is_admin:
+        st.markdown(
+            "<p style='font-size:0.78rem;color:rgba(255,255,255,0.4);margin-top:8px;'>"
+            "🔒 Saving is available with full access.</p>",
+            unsafe_allow_html=True,
+        )
+    elif _saved:
         st.markdown(
             f"<p style='font-size:0.78rem;color:rgba(134,239,172,0.80);margin-top:8px;'>"
             f"✓ Saved: you picked <b>{_saved['my_pick']}</b> "
