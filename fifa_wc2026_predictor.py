@@ -1906,6 +1906,9 @@ _POLY_MATCH_ALIASES: Dict[str, str] = {
     "USA": "United States", "United States": "USA",
     "South Korea": "Korea Republic", "Ivory Coast": "Cote d'Ivoire",
     "Netherlands": "Holland",
+    "Cape Verde": "Cabo Verde", "Cabo Verde": "Cape Verde",
+    "Czechia": "Czech Republic", "Czech Republic": "Czechia",
+    "Turkey": "Turkiye", "Turkiye": "Turkey",
 }
 
 
