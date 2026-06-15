@@ -547,6 +547,57 @@ _TEAM_NAME_ALIASES = {
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# COUNTRY ALTERNATE SPELLINGS  — one registry for all external sources
+# ─────────────────────────────────────────────────────────────────────────────
+# Polymarket, DraftKings/ESPN and other feeds spell some nations differently
+# (Cabo Verde vs Cape Verde, Türkiye vs Turkey, …). List every alternate
+# spelling for a team here ONCE; both the betting-market match-up lookup and the
+# Polymarket per-match lookup match against these, accent/case/punctuation-
+# insensitively. To add a country: "App name": ["Alt 1", "Alt 2", ...].
+# ─────────────────────────────────────────────────────────────────────────────
+COUNTRY_ALIASES: Dict[str, List[str]] = {
+    "USA":                     ["United States", "United States of America", "US"],
+    "South Korea":             ["Korea Republic", "Korea", "Republic of Korea"],
+    "North Korea":             ["Korea DPR", "DPR Korea"],
+    "Ivory Coast":             ["Cote d'Ivoire", "Côte d'Ivoire"],
+    "Netherlands":             ["Holland"],
+    "Cape Verde":              ["Cabo Verde"],
+    "Czechia":                 ["Czech Republic"],
+    "Turkey":                  ["Turkiye", "Türkiye"],
+    "Iran":                    ["IR Iran", "Islamic Republic of Iran"],
+    "Bosnia and Herzegovina":  ["Bosnia", "Bosnia & Herzegovina"],
+    "DR Congo":                ["Congo DR", "Democratic Republic of the Congo"],
+    "Curacao":                 ["Curaçao"],
+    "United Arab Emirates":    ["UAE"],
+    "Republic of Ireland":     ["Ireland"],
+}
+
+
+def _norm_name(s: str) -> str:
+    """Accent/case/punctuation-insensitive key for a team name."""
+    import unicodedata
+    s = unicodedata.normalize("NFKD", s or "").encode("ascii", "ignore").decode()
+    return re.sub(r"[^a-z0-9]", "", s.lower())
+
+
+def country_name_variants(team: str) -> set:
+    """All normalized spellings for `team`: itself + every alias, in both
+    directions (whether `team` is the canonical key or one of its aliases)."""
+    raw = {team}
+    raw.update(COUNTRY_ALIASES.get(team, []))
+    for canon, alts in COUNTRY_ALIASES.items():
+        if team == canon or team in alts:
+            raw.add(canon)
+            raw.update(alts)
+    return {_norm_name(v) for v in raw if v}
+
+
+def _names_match(a: str, b: str) -> bool:
+    """True if two team names refer to the same country under known aliases."""
+    return bool(country_name_variants(a) & country_name_variants(b))
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # CACHE HELPERS
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -1705,10 +1756,14 @@ def fetch_match_odds(home_team: str, away_team: str) -> Optional[Dict]:
     if fixtures.empty:
         return None
 
-    teams = {home_team, away_team}
-    match = fixtures[
-        fixtures.apply(lambda r: {r["home_team"], r["away_team"]} == teams, axis=1)
-    ]
+    # Match the schedule row by team names, tolerant of alternate spellings
+    # (either orientation), via the central COUNTRY_ALIASES registry.
+    def _is_this_fixture(r) -> bool:
+        a, b = r["home_team"], r["away_team"]
+        return ((_names_match(home_team, a) and _names_match(away_team, b)) or
+                (_names_match(home_team, b) and _names_match(away_team, a)))
+
+    match = fixtures[fixtures.apply(_is_this_fixture, axis=1)]
     if match.empty:
         return None
 
@@ -1901,32 +1956,11 @@ _POLY_EVENT_URL  = "https://gamma-api.polymarket.com/events?slug={slug}"
 _POLY_MATCH_CACHE: Dict[frozenset, Any] = {}
 _POLY_MATCH_TTL: float = 300.0               # 5-minute cache per fixture
 
-# Predictor name → alternative spelling that may appear in Polymarket titles.
-_POLY_MATCH_ALIASES: Dict[str, str] = {
-    "USA": "United States", "United States": "USA",
-    "South Korea": "Korea Republic", "Ivory Coast": "Cote d'Ivoire",
-    "Netherlands": "Holland",
-    "Cape Verde": "Cabo Verde", "Cabo Verde": "Cape Verde",
-    "Czechia": "Czech Republic", "Czech Republic": "Czechia",
-    "Turkey": "Turkiye", "Turkiye": "Turkey",
-}
-
-
-def _poly_norm(s: str) -> str:
-    # Fold accents first (ç→c, é→e, ã→a …) so "Curaçao" matches "Curacao".
-    import unicodedata
-    s = unicodedata.normalize("NFKD", s or "").encode("ascii", "ignore").decode()
-    return re.sub(r"[^a-z0-9]", "", s.lower())
-
-
 def _poly_name_in(team: str, text: str) -> bool:
-    """True if `team` (or a known alias) appears in `text`, ignoring punctuation."""
-    txt = _poly_norm(text)
-    t = _poly_norm(team)
-    if t and t in txt:
-        return True
-    alias = _POLY_MATCH_ALIASES.get(team)
-    return bool(alias and _poly_norm(alias) in txt)
+    """True if `team` (or any of its alternate spellings) appears in `text`.
+    Uses the central COUNTRY_ALIASES registry, accent/case/punctuation-blind."""
+    txt = _norm_name(text)
+    return any(v and v in txt for v in country_name_variants(team))
 
 
 def _poly_yes_price(market: Dict) -> Optional[float]:
